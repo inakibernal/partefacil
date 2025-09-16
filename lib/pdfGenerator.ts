@@ -103,7 +103,7 @@ export const generarPDFIndividual = (parte: ParteDiario): void => {
     doc.text(`Creado por: ${parte.creadoPor}`, 110, yPosition)
   }
   yPosition += 6
-  doc.text('Sistema Informe Fácil - Gestión de Residencias', 20, yPosition)
+  doc.text('Sistema Parte Fácil - Gestión de Residencias', 20, yPosition)
   
   const nombreArchivo = `parte_${parte.centro.replace(/\s+/g, '_')}_${parte.fecha}.pdf`
   doc.save(nombreArchivo)
@@ -162,7 +162,7 @@ export const generarPDFMultiple = (partes: ParteDiario[], titulo: string = 'Info
   doc.setFontSize(9)
   doc.setTextColor(100, 100, 100)
   doc.text(`Generado el: ${new Date().toLocaleString('es-ES')}`, 20, finalY)
-  doc.text('Sistema Informe Fácil - Gestión de Residencias', 20, finalY + 6)
+  doc.text('Sistema Parte Fácil - Gestión de Residencias', 20, finalY + 6)
   
   const fecha = new Date().toISOString().split('T')[0]
   const nombreArchivo = `informe_multiple_${fecha}.pdf`
@@ -247,7 +247,7 @@ export const generarPDFMensual = (partes: ParteDiario[], mes: string, año: stri
   doc.setFontSize(9)
   doc.setTextColor(100, 100, 100)
   doc.text(`Generado el: ${new Date().toLocaleString('es-ES')}`, 20, finalY)
-  doc.text('Sistema Informe Fácil - Gestión de Residencias', 20, finalY + 6)
+  doc.text('Sistema Parte Fácil - Gestión de Residencias', 20, finalY + 6)
   
   const nombreArchivo = `informe_mensual_${nombreMes.toLowerCase()}_${año}.pdf`
   doc.save(nombreArchivo)
