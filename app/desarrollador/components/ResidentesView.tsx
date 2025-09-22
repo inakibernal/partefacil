@@ -33,7 +33,7 @@ export default function ResidentesView({
     return grupos;
   };
 
-  const calcularEdad = (fechaNacimiento) => {
+  const calcularEdad = (fechaNacimiento: any) => {
     const today = new Date();
     const birthDate = new Date(fechaNacimiento);
     let age = today.getFullYear() - birthDate.getFullYear();
