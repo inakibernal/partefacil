@@ -1,0 +1,22 @@
+                {tipo === 'parte' ? '📋 Información del Parte' : 'Información Básica'}
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
+                {tipo === 'parte' ? (
+                  <>
+                    <div><strong>Fecha:</strong> {new Date(elemento.fecha).toLocaleDateString('es-ES')}</div>
+                    <div><strong>Hora:</strong> {elemento.hora || 'No especificada'}</div>
+                    <div><strong>Residentes:</strong> {elemento.total_residentes || 0}</div>
+                    <div><strong>Incidencias:</strong> {elemento.residentes_con_incidencias || 0}</div>
+                  </>
+                ) : (
+                  <>
+                    <div><strong>DNI:</strong> {elemento.dni || 'N/A'}</div>
+                    {elemento.email && <div><strong>Email:</strong> {elemento.email}</div>}
+                    {elemento.telefono && <div><strong>Teléfono:</strong> {elemento.telefono}</div>}
+                    {elemento.titulacion && <div><strong>Titulación:</strong> {elemento.titulacion}</div>}
+                    {elemento.turno && <div><strong>Turno:</strong> {elemento.turno}</div>}
+                    {elemento.grado_dependencia && <div><strong>Dependencia:</strong> {utils.dependencia(elemento.grado_dependencia)}</div>}
+                    {elemento.total_plazas && <div><strong>Plazas:</strong> {elemento.plazas_ocupadas || 0}/{elemento.total_plazas}</div>}
+                  </>
+                )}
+              </div>

@@ -1,615 +1,647 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { camposEstatales } from './campos-legales.js';
+import { PDFGenerator } from '../utils/pdfGenerator.js';
 
-const ListaResidentesPersonal = () => {
-  const [expandedResident, setExpandedResident] = useState(null);
-  const [estadosModificados, setEstadosModificados] = useState(new Set());
-  const [partesCompletados, setPartesCompletados] = useState(new Set());
-  const [datosFormulario, setDatosFormulario] = useState({});
-  const [seccionesAbiertas, setSeccionesAbiertas] = useState({});
-  const [seleccionados, setSeleccionados] = useState(new Set());
-  const [mostrarMisPartes, setMostrarMisPartes] = useState(false);
-  const [misPartes, setMisPartes] = useState([]);
-  const [parteActual, setParteActual] = useState({ residentes: {}, fecha: null, completado: false });
-  
-  // Generar 60 residentes automáticamente
-  const residentes = Array.from({length: 60}, (_, i) => {
-    const nombres = ["María García López", "José Martínez Ruiz", "Carmen Rodríguez Sánchez", "Antonio Fernández Pérez", "Dolores Jiménez García", "Francisco López Martín", "Ana Moreno González", "Manuel Ruiz Herrera", "Isabel Sánchez Díez", "Pedro Álvarez Torres"];
-    return {
-      id: i + 1,
-      nombre: nombres[i % nombres.length] + ` (${i + 1})`,
-      edad: 73 + (i % 15),
-      numeroHistoria: `2024-${String(i + 1).padStart(3, '0')}`
-    };
+const NuevoPartePage = () => {
+  const [datos, setDatos] = useState({
+    sesion: null, 
+    trabajadorData: null,
+    residenciaAsignada: null,
+    residentes: [], 
+    partesAnteriores: []
   });
+  const [formulario, setFormulario] = useState({
+    fecha: new Date().toISOString().split('T')[0],
+    hora: new Date().toTimeString().slice(0, 5),
+    vista: 'panel'
+  });
+  const [residentesData, setResidentesData] = useState({});
+  const [residentesExpandidos, setResidentesExpandidos] = useState(new Set());
+  const [filtros, setFiltros] = useState({
+    fecha: '',
+    mes: '',
+    año: new Date().getFullYear().toString(),
+    busqueda: ''
+  });
+  const [parteSeleccionado, setParteSeleccionado] = useState(null);
 
-  // Cargar mis partes al inicializar
-  React.useEffect(() => {
-    const partesGuardados = JSON.parse(localStorage.getItem('partes_completos') || '[]');
-    setMisPartes(partesGuardados);
-    
-    // Cargar parte actual si existe
-    const parteEnCurso = JSON.parse(localStorage.getItem('parte_actual') || '{"residentes": {}, "fecha": null, "completado": false}');
-    setParteActual(parteEnCurso);
-    
-    // Restaurar estado de completados desde el parte actual
-    if (parteEnCurso.residentes) {
-      const completados = new Set(Object.keys(parteEnCurso.residentes).map(Number));
-      setPartesCompletados(completados);
-    }
+  const estilos = {
+    header: { backgroundColor: '#2c3e50', color: 'white', padding: '15px', position: 'sticky', top: 0, zIndex: 1000 },
+    container: { maxWidth: '1200px', margin: '0 auto' },
+    card: { backgroundColor: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+    button: { padding: '12px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' },
+    input: { padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' },
+    buttonRed: { padding: '8px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', backgroundColor: '#dc3545', color: 'white' }
+  };
+
+  useEffect(() => {
+    inicializar();
   }, []);
 
-  // Configuración campos CYL compacta
-  const camposCYL = {
-    conciencia: {
-      titulo: 'Estado de Conciencia',
-      descripcion: 'Alerta, normal',
-      campos: {
-        estado_conciencia: { tipo: 'select', defecto: 'alerta', opciones: ['alerta', 'somnoliento', 'inconsciente'], req: true },
-        estado_animico: { tipo: 'select', defecto: 'tranquilo', opciones: ['tranquilo', 'animado', 'apatico', 'inquieto', 'confuso'], req: true },
-        tension_arterial: { tipo: 'text', placeholder: '120/80' },
-        temperatura: { tipo: 'number', placeholder: '36.5', step: '0.1' },
-        glucemia: { tipo: 'number', placeholder: 'mg/dl' }
-      }
-    },
-    alimentacion: {
-      titulo: 'Alimentación/Ingesta',
-      descripcion: 'Come bien, sin incidencias',
-      campos: {
-        alimentacion_estado: { tipo: 'select', defecto: 'bien', opciones: ['bien', 'regular', 'poco', 'rechaza', 'ayuda'], req: true },
-        observaciones_alimentacion: { tipo: 'textarea', defecto: 'Sin observaciones', req: true },
-        incidencias_alimentacion: { tipo: 'textarea', defecto: 'Ninguna', req: true },
-        dieta_prescrita: { tipo: 'select', defecto: 'normal', opciones: ['normal', 'diabetica', 'triturada', 'sin_sal', 'blanda'] },
-        suplementos: { tipo: 'text', defecto: 'Ninguno' }
-      }
-    },
-    medicacion: {
-      titulo: 'Medicación',
-      descripcion: 'Según pauta, sin incidencias',
-      campos: {
-        medicacion_administrada: { tipo: 'textarea', defecto: 'Según pauta médica - Sin incidencias', req: true },
-        omisiones_rechazos: { tipo: 'textarea', defecto: 'Ninguna', req: true },
-        reacciones_adversas: { tipo: 'textarea', defecto: 'Ninguna', req: true },
-        curas_realizadas: { tipo: 'textarea', defecto: 'No procede' }
-      }
-    },
-    higiene: {
-      titulo: 'Higiene y Cuidados',
-      descripcion: 'Completa, continente',
-      campos: {
-        higiene_diaria: { tipo: 'select', defecto: 'completa', opciones: ['completa', 'parcial'], req: true },
-        control_esfinteres: { tipo: 'select', defecto: 'continente', opciones: ['continente', 'inc_urinaria', 'inc_fecal', 'doble'], req: true },
-        cambios_absorbentes: { tipo: 'number', defecto: '0', min: '0', req: true },
-        estado_piel: { tipo: 'textarea', defecto: 'Sin alteraciones' },
-        cambios_posturales: { tipo: 'textarea', defecto: 'No aplica' }
-      }
-    },
-    movilidad: {
-      titulo: 'Movilidad/Actividades',
-      descripcion: 'Autónomo, participa',
-      campos: {
-        movilidad: { tipo: 'select', defecto: 'autonomo', opciones: ['autonomo', 'ayuda_parcial', 'encamado', 'silla'], req: true },
-        actividades: { tipo: 'textarea', defecto: 'Participa normalmente', req: true },
-        actividades_sociales: { tipo: 'textarea', defecto: 'Sin incidencias' }
-      }
-    },
-    sueno: {
-      titulo: 'Sueño y Descanso',
-      descripcion: 'Descansa bien',
-      campos: {
-        sueno_descanso: { tipo: 'textarea', defecto: 'Ha descansado bien', req: true },
-        incidencias_nocturnas: { tipo: 'textarea', defecto: 'Ninguna', req: true }
-      }
-    },
-    incidencias: {
-      titulo: 'Incidencias',
-      descripcion: 'Sin incidencias',
-      campos: {
-        incidencias_generales: { tipo: 'textarea', defecto: 'Ninguna', req: true },
-        visitas_medicas: { tipo: 'textarea', defecto: 'Ninguna', req: true },
-        visitas_familiares: { tipo: 'textarea', defecto: 'Ninguna' },
-        comunicacion_familia: { tipo: 'checkbox', defecto: false },
-        fecha_comunicacion: { tipo: 'datetime-local', dependeDe: 'comunicacion_familia' }
-      }
+  const calcularEdad = (fechaNacimiento) => {
+    if (!fechaNacimiento) return 'N/A';
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    return edad;
+  };
+
+  const cerrarSesion = () => {
+    if (confirm('¿Seguro que deseas cerrar sesión?')) {
+      localStorage.removeItem('sesion_activa');
+      window.location.href = '/login';
     }
   };
 
-  const getEstado = (id) => {
-    if (partesCompletados.has(id)) return { bg: '#d1ecf1', text: '#0c5460', estado: 'Completado', icono: 'ℹ️' };
-    if (estadosModificados.has(id)) return { bg: '#fff3cd', text: '#856404', estado: 'Modificado', icono: '⚠️' };
-    return { bg: '#d4edda', text: '#155724', estado: 'Normal', icono: '✅' };
-  };
+  const inicializar = () => {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
 
-  const toggleSeleccion = (residenteId) => {
-    setSeleccionados(prev => {
-      const nuevo = new Set(prev);
-      if (nuevo.has(residenteId)) {
-        nuevo.delete(residenteId);
-      } else {
-        nuevo.add(residenteId);
+    if (!sesion.rol || !sesion.dni) { 
+      window.location.href = '/login'; 
+      return; 
+    }
+
+    const directores = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
+    const residencias = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
+    const personal = JSON.parse(localStorage.getItem('personal_data') || '[]');
+    const residentes = JSON.parse(localStorage.getItem('residentes_data') || '[]');
+    const partes = JSON.parse(localStorage.getItem('partes_completos') || '[]');
+
+    let trabajadorData = null;
+    let residenciaAsignada = null;
+    let residentesDelTrabajador = [];
+
+    if (sesion.rol === 'personal' || sesion.rol === 'trabajador') {
+      trabajadorData = personal.find(p => p.dni === sesion.dni);
+      
+      if (!trabajadorData) {
+        alert('Error: No se encontraron datos del trabajador');
+        window.location.href = '/login';
+        return;
       }
-      return nuevo;
+
+      residenciaAsignada = residencias.find(r => 
+        r.id == trabajadorData.residencia_id || 
+        r.id === parseInt(trabajadorData.residencia_id)
+      );
+
+      if (!residenciaAsignada && residencias.length > 0) {
+        residenciaAsignada = residencias[0];
+        trabajadorData.residencia_id = residenciaAsignada.id;
+        const personalActualizado = personal.map(p => 
+          p.dni === sesion.dni ? { ...p, residencia_id: residenciaAsignada.id } : p
+        );
+        localStorage.setItem('personal_data', JSON.stringify(personalActualizado));
+        sesion.residenciaId = residenciaAsignada.id;
+        sesion.residenciaNombre = residenciaAsignada.nombre;
+        localStorage.setItem('sesion_activa', JSON.stringify(sesion));
+      }
+
+      residentesDelTrabajador = residentes.filter(residente => 
+        residente.residencia_id == residenciaAsignada?.id
+      );
+
+    } else if (sesion.rol === 'director') {
+      const directorData = directores.find(d => d.dni === sesion.dni);
+      
+      if (!directorData) {
+        alert('Error: No se encontraron datos del director');
+        window.location.href = '/login';
+        return;
+      }
+
+      const residenciasDelDirector = residencias.filter(r => r.director_id == directorData.id);
+      residenciaAsignada = residenciasDelDirector[0];
+      trabajadorData = directorData;
+
+      const idsResidencias = residenciasDelDirector.map(r => r.id);
+      residentesDelTrabajador = residentes.filter(residente => 
+        idsResidencias.includes(residente.residencia_id)
+      );
+    }
+
+    if (!residenciaAsignada || residentesDelTrabajador.length === 0) {
+      alert('No hay residentes asignados a esta residencia.');
+      return;
+    }
+
+    setDatos({
+      sesion,
+      trabajadorData,
+      residenciaAsignada,
+      residentes: residentesDelTrabajador,
+      partesAnteriores: partes.filter(p => p.trabajador_dni === sesion.dni)
     });
-  };
 
-  const seleccionarTodos = () => {
-    if (seleccionados.size === residentes.length) {
-      setSeleccionados(new Set());
-    } else {
-      setSeleccionados(new Set(residentes.map(r => r.id)));
-    }
-  };
-
-  const verificarYCompletarParte = (nuevosCompletados) => {
-    if (nuevosCompletados.size === 60) {
-      // Parte completo - guardar en "Mis Partes"
-      const parteCompleto = {
-        fecha: new Date().toISOString(),
-        profesional: 'Juan Pérez Martín',
-        residencia: 'Residencia San José',
-        totalResidentes: 60,
-        datosResidentes: parteActual.residentes
-      };
-      
-      const partesExistentes = JSON.parse(localStorage.getItem('partes_completos') || '[]');
-      const actualizados = [...partesExistentes, parteCompleto];
-      localStorage.setItem('partes_completos', JSON.stringify(actualizados));
-      setMisPartes(actualizados);
-      
-      // Limpiar parte actual
-      setParteActual({ residentes: {}, fecha: null, completado: false });
-      localStorage.removeItem('parte_actual');
-      
-      alert(`¡PARTE DIARIO COMPLETO!\n\nSe ha guardado el parte con los 60 residentes.\nTotal de partes completados: ${actualizados.length}`);
-      
-      return true;
-    }
-    return false;
-  };
-
-  const guardarSeleccionados = () => {
-    const nuevosResidentes = {};
-    
-    seleccionados.forEach(residenteId => {
-      const residente = residentes.find(r => r.id === residenteId);
-      const datosResidente = {
-        nombre: residente.nombre,
-        numeroHistoria: residente.numeroHistoria,
-        edad: residente.edad,
-        fecha: new Date().toISOString(),
-        datos: {}
-      };
-      
-      Object.entries(camposCYL).forEach(([_, seccion]) => {
-        Object.entries(seccion.campos).forEach(([campoId, config]) => {
-          datosResidente.datos[campoId] = config.defecto;
-        });
+    const datosIniciales = {};
+    residentesDelTrabajador.forEach(residente => {
+      datosIniciales[residente.id] = {};
+      Object.entries(camposEstatales).forEach(([campo, config]) => {
+        datosIniciales[residente.id][campo] = config.defecto || '';
       });
-      
-      nuevosResidentes[residenteId] = datosResidente;
     });
+    setResidentesData(datosIniciales);
+  };
+
+  const tieneIncidencias = (residenteId) => {
+    const datosResidente = residentesData[residenteId] || {};
+    return Object.entries(datosResidente).some(([campo, valor]) => {
+      const config = camposEstatales[campo];
+      return config?.defecto && valor !== config.defecto;
+    });
+  };
+
+  const guardarParte = () => {
+    if (!confirm('¿Guardar el parte diario completo?')) return;
     
-    // Actualizar parte actual
-    const parteActualizado = {
-      ...parteActual,
-      residentes: { ...parteActual.residentes, ...nuevosResidentes },
-      fecha: parteActual.fecha || new Date().toISOString()
+    const parte = {
+      id: Date.now(),
+      fecha: formulario.fecha,
+      hora: formulario.hora,
+      trabajador_nombre: `${datos.sesion.nombre} ${datos.sesion.apellidos}`,
+      trabajador_dni: datos.sesion.dni,
+      residencia_nombre: datos.residenciaAsignada?.nombre,
+      total_residentes: datos.residentes.length,
+      residentes_con_incidencias: datos.residentes.filter(r => tieneIncidencias(r.id)).length,
+      residentes_detalle: datos.residentes.map(residente => ({
+        id: residente.id,
+        dni: residente.dni,
+        nombre: residente.nombre,
+        apellidos: residente.apellidos,
+        edad: calcularEdad(residente.fecha_nacimiento),
+        datos_parte: residentesData[residente.id] || {}
+      })),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
-    
-    setParteActual(parteActualizado);
-    localStorage.setItem('parte_actual', JSON.stringify(parteActualizado));
-    
-    const nuevosCompletados = new Set([...partesCompletados, ...seleccionados]);
-    setPartesCompletados(nuevosCompletados);
-    setSeleccionados(new Set());
-    
-    // Verificar si se completó el parte
-    const seCompleto = verificarYCompletarParte(nuevosCompletados);
-    
-    if (!seCompleto) {
-      alert(`Se guardaron ${seleccionados.size} residentes con valores normales.\nProgreso: ${nuevosCompletados.size}/60 residentes completados.`);
-    }
-  };
 
-  const handleChange = (residenteId, campoId, valor) => {
-    const key = `${residenteId}_${campoId}`;
-    setDatosFormulario(prev => ({ ...prev, [key]: valor }));
+    const partesActuales = JSON.parse(localStorage.getItem('partes_completos') || '[]');
     
-    // Buscar valor por defecto
-    let defecto = '';
-    Object.values(camposCYL).forEach(seccion => {
-      if (seccion.campos[campoId]) defecto = seccion.campos[campoId].defecto || '';
-    });
+    const parteEditado = partesActuales.find(p => 
+      p.fecha === parte.fecha && p.trabajador_dni === parte.trabajador_dni
+    );
     
-    // Actualizar estado
-    if (valor !== defecto) {
-      setEstadosModificados(prev => new Set([...prev, residenteId]));
+    if (parteEditado) {
+      const partesActualizados = partesActuales.map(p => 
+        p.id === parteEditado.id ? { ...parte, id: parteEditado.id, created_at: parteEditado.created_at } : p
+      );
+      localStorage.setItem('partes_completos', JSON.stringify(partesActualizados));
+      alert('Parte actualizado correctamente');
     } else {
-      setEstadosModificados(prev => { const nuevo = new Set(prev); nuevo.delete(residenteId); return nuevo; });
+      localStorage.setItem('partes_completos', JSON.stringify([...partesActuales, parte]));
+      alert(`Parte guardado: ${datos.residentes.length} residentes, ${parte.residentes_con_incidencias} con incidencias`);
     }
+    
+    inicializar();
   };
 
-  const renderCampo = (campoId, config, residenteId) => {
-    const key = `${residenteId}_${campoId}`;
-    const valor = datosFormulario[key] || config.defecto || '';
-    
-    if (config.dependeDe && !datosFormulario[`${residenteId}_${config.dependeDe}`]) return null;
+  const editarParte = (parte) => {
+    const nuevosResidentesData = {};
+    parte.residentes_detalle.forEach(residente => {
+      nuevosResidentesData[residente.id] = residente.datos_parte || {};
+    });
+    setResidentesData(nuevosResidentesData);
+    setFormulario({
+      fecha: parte.fecha,
+      hora: parte.hora,
+      vista: 'panel'
+    });
+  };
 
-    const estilo = { width: '100%', padding: '10px', fontSize: '15px', border: '2px solid #ddd', borderRadius: '5px' };
+  const partesFiltrados = datos.partesAnteriores.filter(parte => {
+    const fechaParte = new Date(parte.fecha);
+    const cumpleFecha = !filtros.fecha || parte.fecha === filtros.fecha;
+    const cumpleMes = !filtros.mes || (fechaParte.getMonth() + 1) === parseInt(filtros.mes);
+    const cumpleAño = !filtros.año || fechaParte.getFullYear() === parseInt(filtros.año);
+    const cumpleBusqueda = !filtros.busqueda || 
+      parte.trabajador_nombre.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+      parte.residencia_nombre.toLowerCase().includes(filtros.busqueda.toLowerCase());
     
+    return cumpleFecha && cumpleMes && cumpleAño && cumpleBusqueda;
+  });
+
+  const renderCampo = (residenteId, campoKey, config) => {
+    const valor = residentesData[residenteId]?.[campoKey] || '';
+    const tieneIncidencia = config.defecto && valor !== config.defecto;
+    const claseBase = `w-full p-2 border rounded text-sm ${tieneIncidencia ? 'border-red-300 bg-red-50' : 'border-gray-300'}`;
+    
+    const actualizar = (nuevoValor) => {
+      setResidentesData(prev => ({
+        ...prev,
+        [residenteId]: { 
+          ...prev[residenteId], 
+          [campoKey]: nuevoValor 
+        }
+      }));
+    };
+
+    const props = {
+      value: valor,
+      onChange: (e) => actualizar(e.target.value),
+      className: claseBase,
+      required: config.obligatorio
+    };
+
     switch (config.tipo) {
       case 'select':
         return (
-          <select value={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.value)} style={estilo}>
-            {config.opciones.map(op => <option key={op} value={op}>{op.replace(/_/g, ' ')}</option>)}
+          <select {...props}>
+            {config.opciones.map(op => (
+              <option key={op.value} value={op.value}>{op.label}</option>
+            ))}
           </select>
         );
-      case 'textarea':
-        return <textarea value={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.value)} style={{...estilo, minHeight: '60px'}} rows="2" />;
-      case 'checkbox':
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <input type="checkbox" checked={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.checked)} />
-            <span>{valor ? 'Sí' : 'No'}</span>
-          </div>
-        );
       case 'number':
-        return <input type="number" value={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.value)} style={estilo} {...(config.min && {min: config.min})} {...(config.step && {step: config.step})} placeholder={config.placeholder} />;
-      case 'datetime-local':
-        return <input type="datetime-local" value={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.value)} style={estilo} />;
+        return <input type="number" {...props} placeholder={config.placeholder} min={config.min} max={config.max} step={config.step} />;
+      case 'time':
+        return <input type="time" {...props} />;
+      case 'textarea':
+        return <textarea {...props} placeholder={config.placeholder} rows={2} />;
       default:
-        return <input type="text" value={valor} onChange={(e) => handleChange(residenteId, campoId, e.target.value)} style={estilo} placeholder={config.placeholder} />;
+        return <input type="text" {...props} placeholder={config.placeholder} />;
     }
   };
 
-  const inicializar = (residenteId) => {
-    const valores = {};
-    Object.entries(camposCYL).forEach(([_, seccion]) => {
-      Object.entries(seccion.campos).forEach(([campoId, config]) => {
-        if (config.defecto !== undefined) valores[`${residenteId}_${campoId}`] = config.defecto;
-      });
-    });
-    setDatosFormulario(prev => ({ ...prev, ...valores }));
-  };
+  const renderHeader = () => (
+    <div style={estilos.header}>
+      <div style={estilos.container}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h1 style={{ fontSize: '24px', margin: '0' }}>
+            Parte Diario - {new Date(formulario.fecha).toLocaleDateString('es-ES')}
+          </h1>
+          <button onClick={cerrarSesion} style={estilos.buttonRed}>
+            Cerrar sesión
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', fontSize: '14px' }}>
+          <div>
+            <strong>Fecha:</strong>
+            <input type="date" value={formulario.fecha} onChange={(e) => setFormulario(prev => ({ ...prev, fecha: e.target.value }))} style={estilos.input} />
+          </div>
+          <div>
+            <strong>Hora:</strong>
+            <input type="time" value={formulario.hora} onChange={(e) => setFormulario(prev => ({ ...prev, hora: e.target.value }))} style={estilos.input} />
+          </div>
+          <div><strong>Personal:</strong> {datos.sesion?.nombre} {datos.sesion?.apellidos}</div>
+          <div><strong>Residencia:</strong> {datos.residenciaAsignada?.nombre}</div>
+          <div><strong>Residentes:</strong> {datos.residentes.length}</div>
+        </div>
+      </div>
+    </div>
+  );
 
-  const guardar = (residenteId) => {
-    const residente = residentes.find(r => r.id === residenteId);
-    const datosResidente = { 
-      nombre: residente.nombre, 
-      numeroHistoria: residente.numeroHistoria,
-      edad: residente.edad,
-      fecha: new Date().toISOString(), 
-      datos: {} 
-    };
-    
-    Object.entries(camposCYL).forEach(([_, seccion]) => {
-      Object.entries(seccion.campos).forEach(([campoId, config]) => {
-        datosResidente.datos[campoId] = datosFormulario[`${residenteId}_${campoId}`] || config.defecto;
-      });
-    });
-    
-    // Actualizar parte actual
-    const parteActualizado = {
-      ...parteActual,
-      residentes: { ...parteActual.residentes, [residenteId]: datosResidente },
-      fecha: parteActual.fecha || new Date().toISOString()
-    };
-    
-    setParteActual(parteActualizado);
-    localStorage.setItem('parte_actual', JSON.stringify(parteActualizado));
-    
-    const nuevosCompletados = new Set([...partesCompletados, residenteId]);
-    setPartesCompletados(nuevosCompletados);
-    
-    // Verificar si se completó el parte
-    const seCompleto = verificarYCompletarParte(nuevosCompletados);
-    
-    if (!seCompleto) {
-      alert(`Residente guardado: ${residente.nombre}\nProgreso: ${nuevosCompletados.size}/60 residentes completados.`);
-    }
-    
-    setExpandedResident(null);
-    setSeccionesAbiertas({});
-  };
+  const renderFiltros = () => (
+    <div style={{ ...estilos.card, marginBottom: '20px' }}>
+      <h3 style={{ margin: '0 0 15px 0' }}>Filtros</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Fecha específica:</label>
+          <input 
+            type="date" 
+            value={filtros.fecha} 
+            onChange={(e) => setFiltros(prev => ({ ...prev, fecha: e.target.value }))}
+            style={estilos.input}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Mes:</label>
+          <select 
+            value={filtros.mes} 
+            onChange={(e) => setFiltros(prev => ({ ...prev, mes: e.target.value }))}
+            style={estilos.input}
+          >
+            <option value="">Todos los meses</option>
+            {Array.from({length: 12}, (_, i) => (
+              <option key={i+1} value={i+1}>
+                {new Date(2024, i, 1).toLocaleDateString('es-ES', { month: 'long' })}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Año:</label>
+          <select 
+            value={filtros.año} 
+            onChange={(e) => setFiltros(prev => ({ ...prev, año: e.target.value }))}
+            style={estilos.input}
+          >
+            <option value="">Todos los años</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Buscar:</label>
+          <input 
+            type="text" 
+            placeholder="Trabajador, residencia..." 
+            value={filtros.busqueda} 
+            onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
+            style={estilos.input}
+          />
+        </div>
+      </div>
+    </div>
+  );
 
-  if (mostrarMisPartes) {
+  const renderVisorParte = () => {
+    if (!parteSeleccionado) return null;
+    
     return (
-      <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh', padding: '15px', fontFamily: 'Arial, sans-serif' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '8px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h1 style={{ fontSize: '28px', color: '#333', margin: '0' }}>Mis Partes Diarios Completos</h1>
-              <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button 
-                onClick={() => setMostrarMisPartes(false)}
-                style={{ padding: '12px 20px', fontSize: '16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-              >
-                ← Volver a Residentes
-              </button>
-            </div>
-            <p style={{ fontSize: '16px', color: '#666', margin: '10px 0 0 0' }}>
-              Total de partes completos realizados: {misPartes.length}
-            </p>
-            <p style={{ fontSize: '14px', color: '#856404', margin: '5px 0 0 0', fontStyle: 'italic' }}>
-              Cada parte representa 60 residentes completados
-            </p>
+      <div style={{ 
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <div style={{ 
+          backgroundColor: 'white', borderRadius: '10px', padding: '30px',
+          maxWidth: '90%', maxHeight: '90%', overflow: 'auto'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0 }}>
+              Parte del {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')}
+            </h2>
+            <button 
+              onClick={() => setParteSeleccionado(null)}
+              style={{ ...estilos.buttonRed, fontSize: '18px', padding: '8px 12px' }}
+            >
+              ×
+            </button>
           </div>
           
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            {misPartes.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-                <p style={{ fontSize: '18px', margin: '0' }}>No hay partes completos aún</p>
-                <p style={{ fontSize: '14px', margin: '10px 0 0 0' }}>Complete los 60 residentes para generar un parte</p>
-              </div>
-            ) : (
-              misPartes.map((parte, index) => (
-                <div key={index} style={{ 
-                  padding: '15px 20px', 
-                  borderBottom: index < misPartes.length - 1 ? '1px solid #e9ecef' : 'none',
-                  backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
-                        Parte #{index + 1} - {parte.residencia}
-                      </h3>
-                      <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
-                        Fecha: {new Date(parte.fecha).toLocaleString('es-ES')} • Por: {parte.profesional} • {parte.totalResidentes} residentes
-                      </p>
-                    </div>
-                    <div style={{ fontSize: '20px', color: '#28a745' }}>✓</div>
-                  </div>
+          <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+            <p><strong>Trabajador:</strong> {parteSeleccionado.trabajador_nombre}</p>
+            <p><strong>Residencia:</strong> {parteSeleccionado.residencia_nombre}</p>
+            <p><strong>Fecha y hora:</strong> {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')} a las {parteSeleccionado.hora}</p>
+            <p><strong>Total residentes:</strong> {parteSeleccionado.total_residentes}</p>
+            <p><strong>Con incidencias:</strong> {parteSeleccionado.residentes_con_incidencias}</p>
+            <p><strong>Última modificación:</strong> {new Date(parteSeleccionado.updated_at).toLocaleString('es-ES')}</p>
+          </div>
+
+          <h3>Detalle de residentes con incidencias:</h3>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {parteSeleccionado.residentes_detalle.filter(r => 
+              Object.entries(r.datos_parte).some(([campo, valor]) => {
+                const config = camposEstatales[campo];
+                return config?.defecto && valor !== config.defecto;
+              })
+            ).map(residente => (
+              <div key={residente.id} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 10px 0' }}>{residente.nombre} {residente.apellidos} - {residente.edad} años</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px', fontSize: '14px' }}>
+                  {Object.entries(residente.datos_parte).map(([campo, valor]) => {
+                    const config = camposEstatales[campo];
+                    if (config?.defecto && valor !== config.defecto) {
+                      return (
+                        <div key={campo}>
+                          <strong>{config.label}:</strong> {valor}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
     );
+  };
+
+  const residentesConIncidencias = datos.residentes.filter(r => tieneIncidencias(r.id));
+  const residentesSinIncidencias = datos.residentes.filter(r => !tieneIncidencias(r.id));
+
+  const renderPanelResidentes = () => (
+    <>
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={() => {
+          const nuevosDatos = { ...residentesData };
+          datos.residentes.forEach(residente => {
+            Object.entries(camposEstatales).forEach(([campo, config]) => {
+              nuevosDatos[residente.id][campo] = config.defecto || '';
+            });
+          });
+          setResidentesData(nuevosDatos);
+        }} style={{ ...estilos.button, backgroundColor: '#28a745', color: 'white' }}>
+          Marcar todos como "normales"
+        </button>
+        <button onClick={guardarParte} style={{ ...estilos.button, backgroundColor: '#007bff', color: 'white' }}>
+          Guardar Parte Completo
+        </button>
+        <button onClick={() => setResidentesExpandidos(new Set(datos.residentes.map(r => r.id)))} 
+                style={{ ...estilos.button, backgroundColor: '#6c757d', color: 'white' }}>
+          Expandir todos
+        </button>
+        <button onClick={() => setResidentesExpandidos(new Set())} 
+                style={{ ...estilos.button, backgroundColor: '#6c757d', color: 'white' }}>
+          Contraer todos
+        </button>
+        <div style={{ backgroundColor: '#fff3cd', padding: '10px 15px', borderRadius: '8px', border: '1px solid #ffeaa7' }}>
+          <span style={{ fontSize: '14px', color: '#856404' }}>
+            Con incidencias: {residentesConIncidencias.length} | Sin incidencias: {residentesSinIncidencias.length}
+          </span>
+        </div>
+      </div>
+
+      {datos.residentes.length === 0 ? (
+        <div style={{ ...estilos.card, textAlign: 'center', padding: '40px' }}>
+          <h3 style={{ color: '#dc3545' }}>No hay residentes asignados</h3>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {residentesConIncidencias.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '20px', color: '#dc3545', marginBottom: '15px' }}>
+                Residentes con incidencias ({residentesConIncidencias.length})
+              </h3>
+              <div style={{ display: 'grid', gap: '20px' }}>
+                {residentesConIncidencias.map(residente => (
+                  <div key={residente.id} style={{ ...estilos.card, border: '2px solid #dc3545' }}>
+                    <div style={{ marginBottom: '20px', borderBottom: '2px solid #e9ecef', paddingBottom: '15px' }}>
+                      <h3 style={{ fontSize: '20px', margin: '0 0 5px 0', color: '#2c3e50' }}>
+                        {residente.nombre} {residente.apellidos}
+                        <span style={{ color: '#dc3545', marginLeft: '10px' }}>⚠️</span>
+                      </h3>
+                      <div style={{ fontSize: '14px', color: '#666' }}>
+                        DNI: {residente.dni} • Edad: {calcularEdad(residente.fecha_nacimiento)} años
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                      {Object.entries(camposEstatales).map(([campoKey, config]) => (
+                        <div key={campoKey}>
+                          <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
+                            {config.label}
+                          </label>
+                          {renderCampo(residente.id, campoKey, config)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {residentesSinIncidencias.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '20px', color: '#28a745', marginBottom: '15px' }}>
+                Residentes sin incidencias ({residentesSinIncidencias.length})
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '10px' }}>
+                {residentesSinIncidencias.map(residente => {
+                  const expandido = residentesExpandidos.has(residente.id);
+                  
+                  return (
+                    <div key={residente.id} style={{
+                      backgroundColor: 'white', border: '2px solid #28a745', borderRadius: '10px', overflow: 'hidden'
+                    }}>
+                      <div 
+                        onClick={() => {
+                          const nuevosExpandidos = new Set(residentesExpandidos);
+                          if (nuevosExpandidos.has(residente.id)) {
+                            nuevosExpandidos.delete(residente.id);
+                          } else {
+                            nuevosExpandidos.add(residente.id);
+                          }
+                          setResidentesExpandidos(nuevosExpandidos);
+                        }}
+                        style={{
+                          padding: '15px', cursor: 'pointer', backgroundColor: '#f8f9fa',
+                          borderBottom: expandido ? '1px solid #e9ecef' : 'none',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <h4 style={{ margin: '0 0 5px 0', fontSize: '16px' }}>
+                            {residente.nombre} {residente.apellidos}
+                          </h4>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            DNI: {residente.dni} • Edad: {calcularEdad(residente.fecha_nacimiento)} años • Sin incidencias
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '20px', color: '#28a745' }}>
+                          {expandido ? '▼' : '▶'}
+                        </div>
+                      </div>
+                      
+                      {expandido && (
+                        <div style={{ padding: '20px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                            {Object.entries(camposEstatales).map(([campoKey, config]) => (
+                              <div key={campoKey}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '5px' }}>
+                                  {config.label}
+                                </label>
+                                {renderCampo(residente.id, campoKey, config)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const renderHistorial = () => (
+    <div>
+      <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Mis Partes Diarios</h2>
+      
+      {renderFiltros()}
+
+      {partesFiltrados.length === 0 ? (
+        <div style={{ ...estilos.card, textAlign: 'center', padding: '40px' }}>
+          <p style={{ fontSize: '18px', color: '#666' }}>No se encontraron partes con los filtros aplicados</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '15px' }}>
+          {partesFiltrados.map(parte => (
+            <div key={parte.id} style={{
+              ...estilos.card,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+              <div>
+                <h4 style={{ margin: '0 0 5px 0', fontSize: '16px' }}>
+                  Parte del {new Date(parte.fecha).toLocaleDateString('es-ES')}
+                </h4>
+                <p style={{ margin: '0', fontSize: '14px', color: '#666' }}>
+                  {parte.total_residentes} residentes • {parte.residentes_con_incidencias} con incidencias • {parte.residencia_nombre}
+                </p>
+                <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#999' }}>
+                  Modificado: {new Date(parte.updated_at).toLocaleString('es-ES')}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => setParteSeleccionado(parte)}
+                  style={{ ...estilos.button, backgroundColor: '#17a2b8', color: 'white', fontSize: '14px', padding: '8px 12px' }}
+                >
+                  Ver
+                </button>
+                <button 
+                  onClick={() => editarParte(parte)}
+                  style={{ ...estilos.button, backgroundColor: '#ffc107', color: 'black', fontSize: '14px', padding: '8px 12px' }}
+                >
+                  Editar
+                </button>
+                <button 
+                  onClick={() => { try { PDFGenerator.generarParteDiario(parte); } catch (error) { console.error('Error:', error); alert('Error al generar PDF'); } }}
+                  style={{ ...estilos.button, backgroundColor: '#dc3545', color: 'white', fontSize: '14px', padding: '8px 12px' }}
+                >
+                  PDF
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (!datos.sesion) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}><p>Cargando sesión...</p></div>;
   }
 
   return (
-    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh', padding: '15px', fontFamily: 'Arial, sans-serif' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        
-        {/* Panel fijo del profesional */}
-        <div style={{ 
-          position: 'sticky', 
-          top: '15px', 
-          backgroundColor: 'white', 
-          padding: '20px', 
-          borderRadius: '8px', 
-          marginBottom: '20px', 
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          border: '2px solid #28a745',
-          zIndex: 1000
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-            <div>
-              <strong style={{ fontSize: '14px', color: '#666' }}>Fecha y Hora:</strong>
-              <div style={{ fontSize: '16px', color: '#333' }}>{new Date().toLocaleString('es-ES')}</div>
-            </div>
-            <div>
-              <strong style={{ fontSize: '14px', color: '#666' }}>Residencia:</strong>
-              <div style={{ fontSize: '16px', color: '#333' }}>Residencia San José</div>
-            </div>
-            <div>
-              <strong style={{ fontSize: '14px', color: '#666' }}>Personal Laboral:</strong>
-              <div style={{ fontSize: '16px', color: '#333' }}>Juan Pérez Martín</div>
-            </div>
-          </div>
-          
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            paddingTop: '15px',
-            borderTop: '1px solid #e9ecef'
-          }}>
-            <div>
-              <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button 
-                onClick={() => setMostrarMisPartes(true)}
-                style={{ 
-                  padding: '10px 20px', 
-                  fontSize: '16px', 
-                  backgroundColor: '#6f42c1', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer',
-                  marginRight: '10px'
-                }}
-              >
-                📋 Mis Partes ({misPartes.length})
-              </button>
-              <span style={{ fontSize: '16px', color: partesCompletados.size === 60 ? '#28a745' : '#856404', fontWeight: 'bold' }}>
-                Progreso: {partesCompletados.size}/60 residentes
-                {partesCompletados.size === 60 && ' - ¡PARTE COMPLETO!'}
-              </span>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button 
-                onClick={seleccionarTodos}
-                style={{ 
-                  padding: '8px 15px', 
-                  fontSize: '14px', 
-                  backgroundColor: seleccionados.size === residentes.length ? '#dc3545' : '#17a2b8', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer' 
-                }}
-              >
-                {seleccionados.size === residentes.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
-              </button>
-              
-              {seleccionados.size > 0 && (
-                <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button 
-                  onClick={guardarSeleccionados}
-                  style={{ 
-                    padding: '8px 15px', 
-                    fontSize: '14px', 
-                    backgroundColor: '#28a745', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '5px', 
-                    cursor: 'pointer',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  💾 Guardar {seleccionados.size} Seleccionados
-                </button>
-              )}
-            </div>
-          </div>
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+      {renderHeader()}
+      
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
+        <div style={estilos.container}>
+          {['panel', 'historial'].map(vista => (
+            <button key={vista} onClick={() => setFormulario(prev => ({ ...prev, vista }))}
+              style={{
+                padding: '15px 20px', border: 'none',
+                backgroundColor: formulario.vista === vista ? '#e9ecef' : 'transparent',
+                borderBottom: formulario.vista === vista ? '3px solid #007bff' : '3px solid transparent',
+                cursor: 'pointer'
+              }}>
+              {vista === 'panel' ? 'Panel de Residentes' : 'Mis Partes'}
+            </button>
+          ))}
         </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          {residentes.map((residente, index) => {
-            const colores = getEstado(residente.id);
-            const expandido = expandedResident === residente.id;
-            
-            return (
-              <div key={residente.id}>
-                <div 
-                  onClick={(e) => {
-                    // No expandir si se hace click en el checkbox
-                    if (e.target.type === 'checkbox') return;
-                    
-                    if (expandido) {
-                      setExpandedResident(null);
-                      setSeccionesAbiertas({});
-                    } else {
-                      setExpandedResident(residente.id);
-                      inicializar(residente.id);
-                    }
-                  }}
-                  style={{ 
-                    backgroundColor: colores.bg,
-                    borderBottom: index < 59 ? '1px solid #dee2e6' : 'none',
-                    padding: '12px 20px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={seleccionados.has(residente.id)}
-                      onChange={() => toggleSeleccion(residente.id)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <span style={{ fontSize: '18px' }}>{colores.icono}</span>
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: colores.text }}>{residente.nombre}</div>
-                      <div style={{ fontSize: '13px', color: colores.text, opacity: 0.8 }}>{residente.edad} años • {residente.numeroHistoria} • {colores.estado}</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '16px', color: colores.text }}>{expandido ? '▲' : '▼'}</div>
-                </div>
-
-                {expandido && (
-                  <div style={{ backgroundColor: '#f8f9fa', padding: '25px' }}>
-                    {Object.entries(camposCYL).map(([seccionId, seccion]) => {
-                      const seccionKey = `${residente.id}_${seccionId}`;
-                      const abierta = seccionesAbiertas[seccionKey];
-                      
-                      return (
-                        <div key={seccionId} style={{ backgroundColor: 'white', border: '1px solid #dee2e6', borderRadius: '5px', marginBottom: '10px' }}>
-                          <div 
-                            onClick={() => setSeccionesAbiertas(prev => ({ ...prev, [seccionKey]: !prev[seccionKey] }))}
-                            style={{ padding: '12px 15px', cursor: 'pointer', backgroundColor: abierta ? '#f1f3f4' : 'white', display: 'flex', justifyContent: 'space-between' }}
-                          >
-                            <div>
-                              <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{seccion.titulo}</div>
-                              <div style={{ fontSize: '14px', color: '#666' }}>{seccion.descripcion}</div>
-                            </div>
-                            <div style={{ fontSize: '14px', color: abierta ? '#007bff' : '#28a745', fontWeight: 'bold' }}>
-                              {abierta ? '▼ Modificar' : '▶ Conforme'}
-                            </div>
-                          </div>
-                          
-                          {abierta && (
-                            <div style={{ padding: '15px' }}>
-                              {Object.entries(seccion.campos).map(([campoId, config]) => (
-                                <div key={campoId} style={{ marginBottom: '12px' }}>
-                                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px', color: config.req ? '#dc3545' : '#6c757d' }}>
-                                    {campoId.replace(/_/g, ' ')} {config.req && '*'}
-                                  </label>
-                                  {renderCampo(campoId, config, residente.id)}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '25px', paddingTop: '20px', borderTop: '2px solid #dee2e6' }}>
-                      <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button onClick={() => { setExpandedResident(null); setSeccionesAbiertas({}); }} style={{ padding: '12px 20px', fontSize: '16px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                        Cerrar
-                      </button>
-                      <!-- Botón Cerrar Sesión --><button onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }} style={{ padding: '8px 15px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '15px' }}>🚪 Cerrar Sesión</button><button onClick={() => guardar(residente.id)} style={{ padding: '12px 25px', fontSize: '16px', backgroundColor: partesCompletados.has(residente.id) ? '#6f42c1' : '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                        {partesCompletados.has(residente.id) ? 'Actualizar' : 'Guardar Residente'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {partesCompletados.size === 60
-&& (
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginTop: '20px', textAlign: 'center', border: '3px solid #28a745' }}>
-            <h3 style={{ fontSize: '24px', color: '#155724', margin: '0 0 8px 0' }}>
-              🎉 ¡PARTE DIARIO COMPLETO! 🎉
-            </h3>
-            <p style={{ fontSize: '18px', color: '#155724', margin: '0' }}>
-              Los 60 residentes han sido completados. El parte se ha guardado automáticamente.
-            </p>
-            <p style={{ fontSize: '16px', color: '#666', margin: '10px 0 0 0' }}>
-              Total de partes completos: {misPartes.length}
-            </p>
-          </div>
-        )}
-
-        {partesCompletados.size > 0 && partesCompletados.size < 60 && (
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginTop: '20px', textAlign: 'center', border: '1px solid #17a2b8' }}>
-            <h3 style={{ fontSize: '20px', color: '#0c5460', margin: '0 0 8px 0' }}>
-              Progreso del Parte Actual
-            </h3>
-            <p style={{ fontSize: '16px', margin: '0' }}>
-              {partesCompletados.size}/60 residentes completados. Continúa hasta completar todos para generar 1 parte.
-            </p>
-            <div style={{ 
-              width: '100%', 
-              backgroundColor: '#e9ecef', 
-              borderRadius: '10px', 
-              height: '20px', 
-              margin: '15px 0',
-              overflow: 'hidden'
-            }}>
-              <div style={{ 
-                width: `${(partesCompletados.size / 60) * 100}%`, 
-                backgroundColor: '#17a2b8', 
-                height: '100%',
-                borderRadius: '10px',
-                transition: 'width 0.3s ease'
-              }}></div>
-            </div>
-            <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
-              {Math.round((partesCompletados.size / 60) * 100)}% completado
-            </p>
-          </div>
-        )}
       </div>
+
+      <div style={{ ...estilos.container, padding: '20px' }}>
+        {formulario.vista === 'panel' ? renderPanelResidentes() : renderHistorial()}
+      </div>
+      
+      {renderVisorParte()}
     </div>
   );
 };
 
-export default ListaResidentesPersonal;
+export default NuevoPartePage;

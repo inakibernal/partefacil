@@ -1,4 +1,14 @@
 export default function HomePage() {
+      {/* Botón Iniciar Sesión - Flotante arriba derecha */}
+      <div className="absolute top-4 right-4 z-50">
+        <a
+          href="/login"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl"
+        >
+          Iniciar Sesión
+        </a>
+      </div>
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Hero Section */}

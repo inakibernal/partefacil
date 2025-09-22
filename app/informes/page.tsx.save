@@ -1,0 +1,433 @@
+"use client"
+import React, { useState, useEffect } from 'react';
+import { SistemaPapelera } from '../utils/sistema.js';
+import ResidentesView from "./components/ResidentesView";
+import ResidenciasView from "./components/ResidenciasView";
+import PersonalView from "./components/PersonalView";
+import ExcelView from "./components/ExcelView";
+import PapeleraView from "./components/PapeleraView";
+
+const DashboardDirector = () => {
+  const [vistaActual, setVistaActual] = useState('partes');
+  const [partesGuardados, setPartesGuardados] = useState([]);
+  const [residentes, setResidentes] = useState([]);
+  const [personal, setPersonal] = useState([]);
+  const [residencias, setResidencias] = useState([]);
+  const [papelera, setPapelera] = useState([]);
+  const [directorActual, setDirectorActual] = useState(null);
+  const [sesionActiva, setSesionActiva] = useState(null);
+  const [fichaVisible, setFichaVisible] = useState(null);
+  const [formularioPersonal, setFormularioPersonal] = useState(false);
+  const [pasoPersonal, setPasoPersonal] = useState(0);
+  const [datosPersonal, setDatosPersonal] = useState({});
+  const [editandoPersonal, setEditandoPersonal] = useState(null);
+  const [formularioResidencia, setFormularioResidencia] = useState(false);
+  const [pasoResidencia, setPasoResidencia] = useState(0);
+  const [datosResidencia, setDatosResidencia] = useState({});
+  const [editandoResidencia, setEditandoResidencia] = useState(null);
+  
+  useEffect(() => {
+    cargarSesionYDatos();
+  }, []);
+
+  const cargarSesionYDatos = () => {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+    setSesionActiva(sesion);
+    
+    if (sesion.rol === 'director' && sesion.directorId) {
+      const directores = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
+      const director = directores.find(d => d.id === sesion.directorId);
+      setDirectorActual(director);
+      cargarDatosDelDirector(sesion.directorId);
+    } else {
+      window.location.href = '/login';
+    }
+  };
+
+  const cargarDatosDelDirector = (directorId) => {
+    const partes = JSON.parse(localStorage.getItem('partes_completos') || '[]');
+    setPartesGuardados(partes);
+    
+    const todasResidencias = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
+    const residenciasDelDirector = todasResidencias.filter(r => Number(r.director_id) === Number(directorId));
+    setResidencias(residenciasDelDirector);
+    
+    const idsResidencias = residenciasDelDirector.map(r => Number(r.id));
+    
+    const todoPersonal = JSON.parse(localStorage.getItem('personal_data') || '[]');
+    const personalUnico = todoPersonal.filter((p, index, array) => 
+      idsResidencias.includes(Number(p.residencia_id)) && 
+      array.findIndex(item => item.id === p.id) === index
+    );
+    setPersonal(personalUnico);
+    
+    const todosResidentes = JSON.parse(localStorage.getItem('residentes_data') || '[]');
+    setResidentes(todosResidentes.filter(r => idsResidencias.includes(Number(r.residencia_id))));
+    
+    setPapelera(SistemaPapelera.obtenerPapelera());
+  };
+
+  const mostrarFicha = (elemento, tipo) => {
+    let datosExtendidos = { ...elemento, tipoFicha: tipo };
+    if (tipo === 'personal') {
+      const residencia = residencias.find(r => r.id == elemento.residencia_id);
+      datosExtendidos.residenciaInfo = residencia;
+    } else if (tipo === 'residencia') {
+      datosExtendidos.personalAsignado = personal.filter(p => p.residencia_id == elemento.id);
+      datosExtendidos.residentesAsignados = residentes.filter(r => r.residencia_id == elemento.id);
+    }
+    setFichaVisible(datosExtendidos);
+  };
+
+  const eliminarElemento = (tipo, elemento) => {
+    if (tipo === 'residencia') {
+      if (!confirm(`¿Estás seguro de eliminar la residencia "${elemento.nombre}"?`)) return;
+      if (!confirm(`ATENCIÓN: Esta acción enviará la residencia a la papelera. ¿Confirmas?`)) return;
+    } else {
+      if (!confirm(`¿Enviar ${tipo} a papelera?`)) return;
+    }
+    
+    SistemaPapelera.eliminar(tipo, elemento, `Eliminado por director`);
+    setTimeout(() => cargarDatosDelDirector(sesionActiva.directorId), 100);
+  };
+
+  const restaurarElemento = (elementoId) => {
+    if (SistemaPapelera.restaurar(elementoId)) {
+      cargarDatosDelDirector(sesionActiva.directorId);
+      alert('Elemento restaurado correctamente');
+    }
+  };
+
+  const camposPersonal = [
+    { campo: 'dni', label: '¿DNI del trabajador?', tipo: 'text', req: true },
+    { campo: 'nombre', label: '¿Nombre?', tipo: 'text', req: true },
+    { campo: 'apellidos', label: '¿Apellidos?', tipo: 'text', req: true },
+    { campo: 'telefono', label: '¿Teléfono?', tipo: 'tel', req: true },
+    { campo: 'email', label: '¿Email?', tipo: 'email', req: true },
+    { campo: 'fecha_nacimiento', label: '¿Fecha nacimiento?', tipo: 'date', req: true },
+    { campo: 'direccion', label: '¿Dirección?', tipo: 'text', req: true },
+    { campo: 'poblacion', label: '¿Población?', tipo: 'text', req: true },
+    { campo: 'codigo_postal', label: '¿Código postal?', tipo: 'text', req: true },
+    { campo: 'fecha_alta', label: '¿Fecha alta en clínica?', tipo: 'date', req: true },
+    { campo: 'titulacion', label: '¿Titulación?', tipo: 'text', req: true },
+    { campo: 'numero_colegiado', label: '¿Número colegiado?', tipo: 'text', req: true },
+    { campo: 'residencia_id', label: '¿Residencia asignada?', tipo: 'select', req: true },
+    { campo: 'contrasena', label: '¿Contraseña de acceso?', tipo: 'password', req: true }
+  ];
+
+  const camposResidencia = [
+    { campo: 'nombre', label: '¿Nombre de la residencia?', tipo: 'text', req: true },
+    { campo: 'direccion', label: '¿Dirección?', tipo: 'text', req: true },
+    { campo: 'codigo_postal', label: '¿Código postal?', tipo: 'text', req: true },
+    { campo: 'poblacion', label: '¿Población?', tipo: 'text', req: true },
+    { campo: 'telefono_fijo', label: '¿Teléfono fijo?', tipo: 'tel', req: true },
+    { campo: 'telefono_movil', label: '¿Teléfono móvil?', tipo: 'tel', req: false },
+    { campo: 'email', label: '¿Email?', tipo: 'email', req: true },
+    { campo: 'total_plazas', label: '¿Número total de plazas?', tipo: 'number', req: true },
+    { campo: 'plazas_ocupadas', label: '¿Plazas ocupadas actualmente?', tipo: 'number', req: true },
+    { campo: 'cif', label: '¿CIF?', tipo: 'text', req: true },
+    { campo: 'numero_licencia', label: '¿Número de licencia?', tipo: 'text', req: true },
+    { campo: 'dni_director', label: '¿DNI del director/a?', tipo: 'text', req: true },
+    { campo: 'nombre_director', label: '¿Nombre del director/a?', tipo: 'text', req: true }
+  ];
+
+  const iniciarFormularioPersonal = (trabajador = null) => {
+    setFormularioPersonal(true);
+    setPasoPersonal(0);
+    setEditandoPersonal(trabajador);
+    setDatosPersonal(trabajador ? { ...trabajador } : {});
+  };
+
+  const iniciarFormularioResidencia = (residencia = null) => {
+    setFormularioResidencia(true);
+    setPasoResidencia(0);
+    setEditandoResidencia(residencia);
+    setDatosResidencia(residencia ? { ...residencia } : {});
+  };
+
+  const guardarPersonal = () => {
+    const nuevoPersonal = {
+      ...datosPersonal,
+      id: editandoPersonal ? editandoPersonal.id : Date.now(),
+      fecha_creacion: editandoPersonal ? editandoPersonal.fecha_creacion : new Date().toISOString(),
+      fecha_modificacion: new Date().toISOString()
+    };
+
+    const todoPersonal = JSON.parse(localStorage.getItem('personal_data') || '[]');
+    const personalActualizado = editandoPersonal 
+      ? todoPersonal.map(p => p.id === editandoPersonal.id ? nuevoPersonal : p)
+      : [...todoPersonal, nuevoPersonal];
+
+    localStorage.setItem('personal_data', JSON.stringify(personalActualizado));
+    setFormularioPersonal(false);
+    cargarDatosDelDirector(sesionActiva.directorId);
+  };
+
+  const guardarResidencia = () => {
+    const nuevaResidencia = {
+      ...datosResidencia,
+      id: editandoResidencia ? editandoResidencia.id : Date.now(),
+      director_id: sesionActiva.directorId,
+      fecha_creacion: editandoResidencia ? editandoResidencia.fecha_creacion : new Date().toISOString(),
+      fecha_modificacion: new Date().toISOString()
+    };
+
+    const todasResidencias = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
+    const residenciasActualizadas = editandoResidencia 
+      ? todasResidencias.map(r => r.id === editandoResidencia.id ? nuevaResidencia : r)
+      : [...todasResidencias, nuevaResidencia];
+
+    localStorage.setItem('residencias_sistema', JSON.stringify(residenciasActualizadas));
+    setFormularioResidencia(false);
+    cargarDatosDelDirector(sesionActiva.directorId);
+  };
+
+  if (formularioPersonal) {
+    const campoActual = camposPersonal[pasoPersonal];
+    return (
+      <div style={{ backgroundColor: '#4a90e2', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ backgroundColor: 'white', padding: '60px 40px', borderRadius: '10px', maxWidth: '600px', width: '90%' }}>
+          <div style={{ marginBottom: '30px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
+              {editandoPersonal ? 'Editando' : 'Creando'} personal • {pasoPersonal + 1} de {camposPersonal.length}
+            </div>
+            <div style={{ width: '100%', height: '4px', backgroundColor: '#e9ecef', borderRadius: '2px' }}>
+              <div style={{ width: `${((pasoPersonal + 1) / camposPersonal.length) * 100}%`, height: '100%', backgroundColor: '#4a90e2', borderRadius: '2px' }}></div>
+            </div>
+          </div>
+          <h2 style={{ fontSize: '28px', marginBottom: '30px' }}>{campoActual.label}</h2>
+          <div style={{ marginBottom: '40px' }}>
+            {campoActual.tipo === 'select' ? (
+              <select 
+                value={datosPersonal[campoActual.campo] || ''} 
+                onChange={(e) => setDatosPersonal({...datosPersonal, [campoActual.campo]: e.target.value})} 
+                style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
+              >
+                <option value="">Seleccionar residencia...</option>
+                {residencias.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+              </select>
+            ) : (
+              <input 
+                type={campoActual.tipo} 
+                value={datosPersonal[campoActual.campo] || ''} 
+                onChange={(e) => setDatosPersonal({...datosPersonal, [campoActual.campo]: e.target.value})} 
+                style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }} 
+              />
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {pasoPersonal > 0 ? (
+              <button onClick={() => setPasoPersonal(pasoPersonal - 1)} style={{ padding: '15px 30px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '8px' }}>Anterior</button>
+            ) : (
+              <button onClick={() => setFormularioPersonal(false)} style={{ padding: '15px 30px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '8px' }}>Cancelar</button>
+            )}
+            <button 
+              onClick={() => {
+                if (pasoPersonal < camposPersonal.length - 1) {
+                  setPasoPersonal(pasoPersonal + 1);
+                } else {
+                  guardarPersonal();
+                }
+              }} 
+              disabled={campoActual.req && !datosPersonal[campoActual.campo]} 
+              style={{ padding: '15px 30px', backgroundColor: (campoActual.req && !datosPersonal[campoActual.campo]) ? '#ccc' : '#4a90e2', color: 'white', border: 'none', borderRadius: '8px' }}
+            >
+              {pasoPersonal === camposPersonal.length - 1 ? (editandoPersonal ? 'Actualizar' : 'Crear') : 'Siguiente'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (formularioResidencia) {
+    const campoActual = camposResidencia[pasoResidencia];
+    return (
+      <div style={{ backgroundColor: '#6f42c1', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ backgroundColor: 'white', padding: '60px 40px', borderRadius: '10px', maxWidth: '600px', width: '90%' }}>
+          <div style={{ marginBottom: '30px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
+              {editandoResidencia ? 'Editando' : 'Creando'} residencia • {pasoResidencia + 1} de {camposResidencia.length}
+            </div>
+            <div style={{ width: '100%', height: '4px', backgroundColor: '#e9ecef', borderRadius: '2px' }}>
+              <div style={{ width: `${((pasoResidencia + 1) / camposResidencia.length) * 100}%`, height: '100%', backgroundColor: '#6f42c1', borderRadius: '2px' }}></div>
+            </div>
+          </div>
+          <h2 style={{ fontSize: '28px', marginBottom: '30px' }}>{campoActual.label}</h2>
+          <div style={{ marginBottom: '40px' }}>
+            <input 
+              type={campoActual.tipo} 
+              value={datosResidencia[campoActual.campo] || ''} 
+              onChange={(e) => setDatosResidencia({...datosResidencia, [campoActual.campo]: e.target.value})} 
+              style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }} 
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {pasoResidencia > 0 ? (
+              <button onClick={() => setPasoResidencia(pasoResidencia - 1)} style={{ padding: '15px 30px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '8px' }}>Anterior</button>
+            ) : (
+              <button onClick={() => setFormularioResidencia(false)} style={{ padding: '15px 30px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '8px' }}>Cancelar</button>
+            )}
+            <button 
+              onClick={() => {
+                if (pasoResidencia < camposResidencia.length - 1) {
+                  setPasoResidencia(pasoResidencia + 1);
+                } else {
+                  guardarResidencia();
+                }
+              }} 
+              disabled={campoActual.req && !datosResidencia[campoActual.campo]} 
+              style={{ padding: '15px 30px', backgroundColor: (campoActual.req && !datosResidencia[campoActual.campo]) ? '#ccc' : '#6f42c1', color: 'white', border: 'none', borderRadius: '8px' }}
+            >
+              {pasoResidencia === camposResidencia.length - 1 ? (editandoResidencia ? 'Actualizar' : 'Crear') : 'Siguiente'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fichaVisible) {
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '10px', maxWidth: '700px', width: '90%', maxHeight: '80%', overflow: 'auto' }}>
+          <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
+            <h2>
+              {fichaVisible.tipoFicha === 'residencia' ? fichaVisible.nombre : `${fichaVisible.nombre} ${fichaVisible.apellidos || ''}`}
+            </h2>
+            <button onClick={() => setFichaVisible(null)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', padding: '10px 15px' }}>× Cerrar</button>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {fichaVisible.tipoFicha === 'personal' && (
+              <>
+                <p><strong>DNI:</strong> {fichaVisible.dni}</p>
+                <p><strong>Email:</strong> {fichaVisible.email}</p>
+                <p><strong>Teléfono:</strong> {fichaVisible.telefono}</p>
+                <p><strong>Dirección:</strong> {fichaVisible.direccion}</p>
+                <p><strong>Población:</strong> {fichaVisible.poblacion}</p>
+                <p><strong>Código Postal:</strong> {fichaVisible.codigo_postal}</p>
+                <p><strong>Fecha Alta:</strong> {fichaVisible.fecha_alta ? new Date(fichaVisible.fecha_alta).toLocaleDateString() : 'No especificada'}</p>
+                <p><strong>Titulación:</strong> {fichaVisible.titulacion}</p>
+                <p><strong>Nº Colegiado:</strong> {fichaVisible.numero_colegiado}</p>
+                <p><strong>Residencia:</strong> {fichaVisible.residenciaInfo?.nombre || 'Sin asignar'}</p>
+                <p><strong>Contraseña:</strong> {fichaVisible.contrasena}</p>
+                {fichaVisible.fecha_modificacion && <p><strong>Última modificación:</strong> {new Date(fichaVisible.fecha_modificacion).toLocaleString()}</p>}
+              </>
+            )}
+            {fichaVisible.tipoFicha === 'residencia' && (
+              <>
+                <p><strong>Dirección:</strong> {fichaVisible.direccion}</p>
+                <p><strong>Código Postal:</strong> {fichaVisible.codigo_postal}</p>
+                <p><strong>Población:</strong> {fichaVisible.poblacion}</p>
+                <p><strong>Teléfono Fijo:</strong> {fichaVisible.telefono_fijo}</p>
+                <p><strong>Teléfono Móvil:</strong> {fichaVisible.telefono_movil || 'No especificado'}</p>
+                <p><strong>Email:</strong> {fichaVisible.email}</p>
+                <p><strong>Plazas:</strong> {fichaVisible.plazas_ocupadas}/{fichaVisible.total_plazas}</p>
+                <p><strong>CIF:</strong> {fichaVisible.cif}</p>
+                <p><strong>Número de Licencia:</strong> {fichaVisible.numero_licencia}</p>
+                <p><strong>DNI Director:</strong> {fichaVisible.dni_director}</p>
+                <p><strong>Nombre Director:</strong> {fichaVisible.nombre_director}</p>
+                <p><strong>Personal Asignado:</strong> {fichaVisible.personalAsignado?.length || 0}</p>
+                <p><strong>Residentes:</strong> {fichaVisible.residentesAsignados?.length || 0}</p>
+                {fichaVisible.fecha_modificacion && <p><strong>Última modificación:</strong> {new Date(fichaVisible.fecha_modificacion).toLocaleString()}</p>}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', margin: '0 0 10px 0' }}>Panel de Director</h1>
+            <p style={{ margin: '0', opacity: 0.8 }}>
+              {directorActual ? `${directorActual.nombre} ${directorActual.apellidos}` : 'Cargando...'}
+            </p>
+          </div>
+          <button 
+            onClick={() => { localStorage.removeItem('sesion_activa'); window.location.href = '/login'; }}
+            style={{ padding: '12px 20px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex' }}>
+          {[
+            { id: 'partes', label: 'Partes Diarios', icon: '📋' },
+            { id: 'residencias', label: 'Residencias', icon: '🏢' },
+            { id: 'residentes', label: 'Residentes', icon: '👥' },
+            { id: 'personal', label: 'Personal', icon: '👨‍⚕️' },
+            { id: 'excel', label: 'Excel', icon: '📊' },
+            { id: 'papelera', label: 'Papelera', icon: '🗑️' }
+          ].map(item => (
+            <button key={item.id} onClick={() => setVistaActual(item.id)} 
+                    style={{ padding: '15px 20px', border: 'none', backgroundColor: vistaActual === item.id ? '#e9ecef' : 'transparent', cursor: 'pointer' }}>
+              {item.icon} {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>
+        
+        {vistaActual === 'personal' && (
+          <div>
+            <h2>Personal ({personal.length})</h2>
+            <button onClick={() => iniciarFormularioPersonal()} style={{ padding: '12px 24px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '8px', marginBottom: '20px' }}>+ Agregar Personal</button>
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden' }}>
+              {personal.map((trabajador, index) => (
+                <div key={trabajador.id} style={{ padding: '20px', borderBottom: index < personal.length - 1 ? '1px solid #e9ecef' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ margin: '0 0 5px 0' }}>{trabajador.nombre} {trabajador.apellidos}</h3>
+                      <p style={{ margin: '0', color: '#666' }}>DNI: {trabajador.dni} • Email: {trabajador.email}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button onClick={() => mostrarFicha(trabajador, 'personal')} style={{ padding: '8px 16px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px' }}>Ver</button>
+                      <button onClick={() => iniciarFormularioPersonal(trabajador)} style={{ padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px' }}>Editar</button>
+                      <button onClick={() => eliminarElemento('personal', trabajador)} style={{ padding: '8px 16px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px' }}>Eliminar</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {vistaActual === 'residencias' && (
+          <div>
+            <h2>Residencias ({residencias.length})</h2>
+            <button onClick={() => iniciarFormularioResidencia()} style={{ padding: '12px 24px', backgroundColor: '#6f42c1', color: 'white', border: 'none', borderRadius: '8px', marginBottom: '20px' }}>+ Agregar Residencia</button>
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden' }}>
+              {residencias.map((residencia, index) => (
+                <div key={residencia.id} style={{ padding: '20px', borderBottom: index < residencias.length - 1 ? '1px solid #e9ecef' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ margin: '0 0 5px 0' }}>{residencia.nombre}</h3>
+                      <p style={{ margin: '0', color: '#666' }}>{residencia.direccion}, {residencia.poblacion} • Plazas: {residencia.plazas_ocupadas}/{residencia.total_plazas}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button onClick={() => mostrarFicha(residencia, 'residencia')} style={{ padding: '8px 16px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px' }}>Ver</button>
+                      <button onClick={() => iniciarFormularioResidencia(residencia)} style={{ padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px' }}>Editar</button>
+                      <button onClick={() => eliminarElemento('residencia', residencia)} style={{ padding: '8px 16px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px' }}>Eliminar</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+export default DashboardDirector;

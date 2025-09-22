@@ -1,0 +1,896 @@
+"use client"
+import React, { useState, useEffect } from 'react';
+import { SistemaGestion, SistemaPapelera, inicializarSistema } from '../utils/sistema.js';
+
+const PanelDesarrollador = () => {
+  const [vistaActual, setVistaActual] = useState('directores');
+  const [directores, setDirectores] = useState([]);
+  const [residencias, setResidencias] = useState([]);
+  const [personal, setPersonal] = useState([]);
+  const [residentes, setResidentes] = useState([]);
+  const [papelera, setPapelera] = useState([]);
+  const [formularioActivo, setFormularioActivo] = useState(false);
+  const [pasoActual, setPasoActual] = useState(0);
+  const [datosFormulario, setDatosFormulario] = useState({});
+  const [directorSeleccionado, setDirectorSeleccionado] = useState(null);
+  const [totalResidencias, setTotalResidencias] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+  const [editandoElemento, setEditandoElemento] = useState(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    inicializarSistema();
+    cargarTodosDatos();
+  }, []);
+
+  const cargarTodosDatos = () => {
+    if (typeof window !== 'undefined') {
+      const directoresData = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
+      const residenciasData = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
+      const personalData = JSON.parse(localStorage.getItem('personal_data') || '[]');
+      const residentesData = JSON.parse(localStorage.getItem('residentes_data') || '[]');
+      const papeleraData = SistemaPapelera.obtenerPapelera();
+      
+      setDirectores(directoresData);
+      setResidencias(residenciasData);
+      setPersonal(personalData);
+      setResidentes(residentesData);
+      setPapelera(papeleraData);
+      setTotalResidencias(residenciasData.length);
+    }
+  };
+
+  // Formularios para cada tipo de entidad
+  const formularios = {
+    director: [
+      { campo: 'nombre', label: '¿Nombre del director?', tipo: 'text', req: true },
+      { campo: 'apellidos', label: '¿Apellidos completos?', tipo: 'text', req: true },
+      { campo: 'dni', label: '¿DNI del director?', tipo: 'text', placeholder: '12345678A', req: true },
+      { campo: 'email', label: '¿Email corporativo?', tipo: 'email', req: true },
+      { campo: 'telefono', label: '¿Teléfono de contacto?', tipo: 'tel', req: true },
+      { campo: 'fecha_nacimiento', label: '¿Fecha de nacimiento?', tipo: 'date', req: true },
+      { campo: 'direccion', label: '¿Dirección personal?', tipo: 'text', req: true },
+      { campo: 'ciudad', label: '¿Ciudad de residencia?', tipo: 'text', req: true },
+      { campo: 'codigo_postal', label: '¿Código postal?', tipo: 'text', req: true },
+      { campo: 'titulo_profesional', label: '¿Título profesional?', tipo: 'text', placeholder: 'Ej: Licenciado en Medicina', req: true },
+      { campo: 'experiencia', label: '¿Años de experiencia en gestión de residencias?', tipo: 'number', min: '0', req: true },
+      { campo: 'contrasena', label: '¿Contraseña temporal para acceso?', tipo: 'password', req: true },
+      { campo: 'confirmar_contrasena', label: '¿Confirmar contraseña?', tipo: 'password', req: true }
+    ],
+    
+    residencia: [
+      { campo: 'nombre', label: '¿Cuál es el nombre de la residencia?', tipo: 'text', req: true },
+      { campo: 'director_id', label: '¿Qué director la gestionará?', tipo: 'select_directores', req: true },
+      { campo: 'direccion', label: '¿Dirección completa?', tipo: 'text', req: true },
+      { campo: 'poblacion', label: '¿Población?', tipo: 'text', req: true },
+      { campo: 'provincia', label: '¿Provincia?', tipo: 'text', req: true },
+      { campo: 'telefono_fijo', label: '¿Teléfono fijo?', tipo: 'tel', req: true },
+      { campo: 'telefono_movil', label: '¿Teléfono móvil?', tipo: 'tel' },
+      { campo: 'email', label: '¿Email de contacto?', tipo: 'email', req: true },
+      { campo: 'total_plazas', label: '¿Número total de plazas?', tipo: 'number', min: '1', req: true },
+      { campo: 'plazas_ocupadas', label: '¿Plazas ocupadas actualmente?', tipo: 'number', min: '0', req: true },
+      { campo: 'cif', label: '¿CIF de la residencia?', tipo: 'text', req: true },
+      { campo: 'numero_licencia', label: '¿Número de licencia?', tipo: 'text', req: true }
+    ],
+
+    trabajador: [
+      { campo: 'dni', label: '¿Cuál es el DNI del trabajador?', tipo: 'text', placeholder: '12345678A', req: true },
+      { campo: 'nombre', label: '¿Nombre del trabajador?', tipo: 'text', req: true },
+      { campo: 'apellidos', label: '¿Apellidos completos?', tipo: 'text', req: true },
+      { campo: 'telefono', label: '¿Número de teléfono?', tipo: 'tel', req: true },
+      { campo: 'email', label: '¿Correo electrónico?', tipo: 'email', req: true },
+      { campo: 'fecha_nacimiento', label: '¿Fecha de nacimiento?', tipo: 'date', req: true },
+      { campo: 'residencia_id', label: '¿A qué residencia será asignado?', tipo: 'select_residencias', req: true },
+      { campo: 'contrasena', label: '¿Contraseña temporal?', tipo: 'password', req: true }
+    ],
+
+    residente: [
+      { campo: 'dni', label: '¿Cuál es el DNI del residente?', tipo: 'text', placeholder: '12345678A', req: true },
+      { campo: 'nombre', label: '¿Nombre del residente?', tipo: 'text', req: true },
+      { campo: 'apellidos', label: '¿Apellidos completos?', tipo: 'text', req: true },
+      { campo: 'fecha_nacimiento', label: '¿Fecha de nacimiento?', tipo: 'date', req: true },
+      { campo: 'numero_historia', label: '¿Número de historia clínica?', tipo: 'text', req: true },
+      { campo: 'fecha_ingreso', label: '¿Fecha de ingreso en la residencia?', tipo: 'date', req: true },
+      { campo: 'grado_dependencia', label: '¿Grado de dependencia?', tipo: 'select', opciones: ['I', 'II', 'III'], req: true },
+      { campo: 'alergias', label: '¿Alergias conocidas?', tipo: 'textarea', placeholder: 'Ninguna conocida' },
+      { campo: 'medicacion_habitual', label: '¿Medicación habitual?', tipo: 'textarea' },
+      { campo: 'contacto_emergencia', label: '¿Contacto de emergencia (nombre)?', tipo: 'text', req: true },
+      { campo: 'telefono_emergencia', label: '¿Teléfono de emergencia?', tipo: 'tel', req: true },
+      { campo: 'parentesco', label: '¿Parentesco del contacto?', tipo: 'select', opciones: ['Hijo/a', 'Cónyuge', 'Hermano/a', 'Nieto/a', 'Otro'], req: true },
+      { campo: 'estado_salud', label: '¿Estado de salud actual?', tipo: 'textarea' },
+      { campo: 'observaciones', label: '¿Observaciones adicionales?', tipo: 'textarea' },
+      { campo: 'residencia_id', label: '¿En qué residencia ingresará?', tipo: 'select_residencias', req: true }
+    ]
+  };
+
+  const iniciarFormulario = (tipo, elemento = null) => {
+    setFormularioActivo(tipo);
+    setPasoActual(0);
+    
+    if (elemento) {
+      setEditandoElemento(elemento);
+      setDatosFormulario({ ...elemento });
+    } else {
+      setEditandoElemento(null);
+      setDatosFormulario({});
+    }
+  };
+
+  const siguientePaso = () => {
+    const formulario = formularios[formularioActivo];
+    const campoActual = formulario[pasoActual];
+    
+    // Validación especial para confirmar contraseña
+    if (campoActual.campo === 'confirmar_contrasena') {
+      if (datosFormulario.contrasena !== datosFormulario.confirmar_contrasena) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+    }
+
+    if (pasoActual < formulario.length - 1) {
+      setPasoActual(pasoActual + 1);
+    } else {
+      guardarFormulario();
+    }
+  };
+
+  const pasoAnterior = () => {
+    if (pasoActual > 0) {
+      setPasoActual(pasoActual - 1);
+    }
+  };
+
+  const guardarFormulario = () => {
+    const elementoConId = {
+      ...datosFormulario,
+      id: editandoElemento ? editandoElemento.id : Date.now(),
+      fecha_creacion: editandoElemento ? editandoElemento.fecha_creacion : new Date().toISOString(),
+      fecha_modificacion: new Date().toISOString(),
+      creado_por: 'Desarrollador'
+    };
+
+    // Eliminar confirmación de contraseña del objeto final
+    if (elementoConId.confirmar_contrasena) {
+      delete elementoConId.confirmar_contrasena;
+    }
+
+    const claveAlmacenamiento = SistemaPapelera.obtenerClaveAlmacenamiento(formularioActivo);
+    const entidadesActuales = JSON.parse(localStorage.getItem(claveAlmacenamiento) || '[]');
+
+    let entidadesActualizadas;
+    if (editandoElemento) {
+      entidadesActualizadas = entidadesActuales.map(e => e.id === editandoElemento.id ? elementoConId : e);
+    } else {
+      entidadesActualizadas = [...entidadesActuales, elementoConId];
+    }
+
+    localStorage.setItem(claveAlmacenamiento, JSON.stringify(entidadesActualizadas));
+
+    // Crear relaciones si es necesario
+    if (formularioActivo === 'residencia' && elementoConId.director_id) {
+      SistemaGestion.crearRelacion('director', 'residencia', elementoConId.director_id, elementoConId.id);
+    }
+    if ((formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) {
+      SistemaGestion.crearRelacion('residencia', formularioActivo, elementoConId.residencia_id, elementoConId.id);
+    }
+
+    setFormularioActivo(false);
+    setPasoActual(0);
+    setDatosFormulario({});
+    setEditandoElemento(null);
+    cargarTodosDatos();
+    
+    const accion = editandoElemento ? 'actualizado' : 'creado';
+    alert(`${formularioActivo.charAt(0).toUpperCase() + formularioActivo.slice(1)} ${accion} correctamente`);
+  };
+
+  const eliminarElemento = (tipo, elemento) => {
+    if (confirm(`¿Estás seguro de enviar este ${tipo} a la papelera? Se mantendrá por 5 años y podrá ser restaurado.`)) {
+      SistemaPapelera.eliminar(tipo, elemento, 'Eliminado por desarrollador');
+      cargarTodosDatos();
+      alert(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} enviado a la papelera`);
+    }
+  };
+
+  const restaurarElemento = (elementoId) => {
+    if (SistemaPapelera.restaurar(elementoId)) {
+      cargarTodosDatos();
+      alert('Elemento restaurado correctamente');
+    } else {
+      alert('Error al restaurar el elemento');
+    }
+  };
+
+  const renderCampoFormulario = (campo) => {
+    const valor = datosFormulario[campo.campo] || '';
+
+    if (campo.tipo === 'select') {
+      return (
+        <select 
+          value={valor}
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})}
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '18px', 
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="">Selecciona una opción...</option>
+          {campo.opciones.map(opcion => (
+            <option key={opcion} value={opcion}>{opcion}</option>
+          ))}
+        </select>
+      );
+    } else if (campo.tipo === 'select_directores') {
+      return (
+        <select 
+          value={valor}
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})}
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '18px', 
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="">Selecciona un director...</option>
+          {directores.map(director => (
+            <option key={director.id} value={director.id}>
+              {director.nombre} {director.apellidos}
+            </option>
+          ))}
+        </select>
+      );
+    } else if (campo.tipo === 'select_residencias') {
+      return (
+        <select 
+          value={valor}
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})}
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '18px', 
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="">Selecciona una residencia...</option>
+          {residencias.map(residencia => (
+            <option key={residencia.id} value={residencia.id}>{residencia.nombre}</option>
+          ))}
+        </select>
+      );
+    } else if (campo.tipo === 'textarea') {
+      return (
+        <textarea 
+          value={valor}
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})}
+          placeholder={campo.placeholder || ''}
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '18px', 
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            minHeight: '120px',
+            fontFamily: 'Arial, sans-serif',
+            resize: 'vertical'
+          }}
+        />
+      );
+    } else {
+      return (
+        <input 
+          type={campo.tipo}
+          value={valor}
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})}
+          placeholder={campo.placeholder || ''}
+          min={campo.min || ''}
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '18px', 
+            border: '2px solid #ddd',
+            borderRadius: '8px'
+          }}
+        />
+      );
+    }
+  };
+
+  // No renderizar hasta que estemos en el cliente
+  if (!isClient) {
+    return (
+      <div style={{ 
+        backgroundColor: '#f8f9fa', 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ fontSize: '18px', color: '#666' }}>Cargando...</div>
+      </div>
+    );
+  }
+
+  // Formulario tipo typeform
+  if (formularioActivo && formularioActivo !== 'papelera') {
+    const formulario = formularios[formularioActivo];
+    const campoActual = formulario[pasoActual];
+    
+    return (
+      <div style={{ 
+        backgroundColor: '#2c3e50', 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div style={{ 
+          backgroundColor: 'white', 
+          padding: '60px 40px', 
+          borderRadius: '10px', 
+          maxWidth: '600px', 
+          width: '90%',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ marginBottom: '30px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
+              {editandoElemento ? 'Editando' : 'Creando'} {formularioActivo} • {pasoActual + 1} de {formulario.length}
+            </div>
+            <div style={{ 
+              width: '100%', 
+              height: '4px', 
+              backgroundColor: '#e9ecef', 
+              borderRadius: '2px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ 
+                width: `${((pasoActual + 1) / formulario.length) * 100}%`, 
+                height: '100%', 
+                backgroundColor: '#2c3e50',
+                borderRadius: '2px',
+                transition: 'width 0.3s ease'
+              }}></div>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: '28px', color: '#333', marginBottom: '30px', lineHeight: '1.3' }}>
+            {campoActual.label}
+            {campoActual.req && <span style={{ color: '#e74c3c' }}> *</span>}
+          </h2>
+
+          <div style={{ marginBottom: '40px' }}>
+            {renderCampoFormulario(campoActual)}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
+            {pasoActual > 0 ? (
+              <button 
+                onClick={pasoAnterior}
+                style={{ 
+                  padding: '15px 30px', 
+                  fontSize: '16px', 
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                Anterior
+              </button>
+            ) : (
+              <button 
+                onClick={() => setFormularioActivo(false)}
+                style={{ 
+                  padding: '15px 30px', 
+                  fontSize: '16px', 
+                  backgroundColor: '#dc3545',
+                  color: 'white',border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+            )}
+            
+            <button 
+              onClick={siguientePaso}
+              disabled={campoActual.req && !datosFormulario[campoActual.campo]}
+              style={{ 
+                padding: '15px 30px', 
+                fontSize: '16px', 
+                backgroundColor: (campoActual.req && !datosFormulario[campoActual.campo]) ? '#ccc' : '#2c3e50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: (campoActual.req && !datosFormulario[campoActual.campo]) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {pasoActual === formulario.length - 1 ? 
+                (editandoElemento ? 'Actualizar' : 'Crear') : 
+                'Siguiente'
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+      {/* Header */}
+      <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '28px', margin: '0 0 10px 0' }}>Panel de Desarrollador</h1>
+          <p style={{ margin: '0', opacity: 0.8 }}>Gestión completa del sistema</p>
+        </div>
+      </div>
+
+      {/* Navegación */}
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex' }}>
+          {[
+            { id: 'directores', label: 'Directores', icon: '👤' },
+            { id: 'residencias', label: 'Residencias', icon: '🏢' },
+            { id: 'trabajadores', label: 'Trabajadores', icon: '👨‍⚕️' },
+            { id: 'residentes', label: 'Residentes', icon: '👥' },
+            { id: 'papelera', label: 'Papelera', icon: '🗑️' }
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => setVistaActual(item.id)}
+              style={{
+                padding: '15px 20px',
+                border: 'none',
+                backgroundColor: vistaActual === item.id ? '#e9ecef' : 'transparent',
+                borderBottom: vistaActual === item.id ? '3px solid #007bff' : '3px solid transparent',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>
+        
+        {/* Estadísticas */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 10px 0' }}>Directores</h3>
+            <p style={{ fontSize: '32px', color: '#2c3e50', margin: '0', fontWeight: 'bold' }}>{directores.length}</p>
+          </div>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 10px 0' }}>Residencias</h3>
+            <p style={{ fontSize: '32px', color: '#007bff', margin: '0', fontWeight: 'bold' }}>{residencias.length}</p>
+          </div>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 10px 0' }}>Trabajadores</h3>
+            <p style={{ fontSize: '32px', color: '#28a745', margin: '0', fontWeight: 'bold' }}>{personal.length}</p>
+          </div>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 10px 0' }}>Residentes</h3>
+            <p style={{ fontSize: '32px', color: '#6f42c1', margin: '0', fontWeight: 'bold' }}>{residentes.length}</p>
+          </div>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 10px 0' }}>En Papelera</h3>
+            <p style={{ fontSize: '32px', color: '#dc3545', margin: '0', fontWeight: 'bold' }}>{papelera.length}</p>
+          </div>
+        </div>
+
+        {/* Vista Directores */}
+        {vistaActual === 'directores' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Directores</h2>
+              <button 
+                onClick={() => iniciarFormulario('director')}
+                style={{ 
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  backgroundColor: '#2c3e50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Crear Director
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              {directores.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                  <p style={{ fontSize: '18px', margin: '0' }}>No hay directores registrados</p>
+                  <p style={{ fontSize: '14px', margin: '10px 0 0 0' }}>Crea el primer director para comenzar</p>
+                </div>
+              ) : (
+                directores.map((director, index) => (
+                  <div key={director.id} style={{ 
+                    padding: '20px',
+                    borderBottom: index < directores.length - 1 ? '1px solid #e9ecef' : 'none'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
+                          {director.nombre} {director.apellidos}
+                        </h3>
+                        <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                          {director.email} • DNI: {director.dni} • {director.experiencia} años experiencia
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#28a745', margin: '5px 0 0 0' }}>
+                          Residencias: {residencias.filter(r => r.director_id === director.id).length}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          onClick={() => iniciarFormulario('director', director)}
+                          style={{ 
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => eliminarElemento('director', director)}
+                          style={{ 
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vista Residencias */}
+        {vistaActual === 'residencias' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Residencias</h2>
+              <button 
+                onClick={() => iniciarFormulario('residencia')}
+                style={{ 
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Crear Residencia
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              {residencias.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                  <p style={{ fontSize: '18px', margin: '0' }}>No hay residencias registradas</p>
+                </div>
+              ) : (
+                residencias.map((residencia, index) => {
+                  const director = directores.find(d => d.id === residencia.director_id);
+                  return (
+                    <div key={residencia.id} style={{ 
+                      padding: '20px',
+                      borderBottom: index < residencias.length - 1 ? '1px solid #e9ecef' : 'none'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
+                            {residencia.nombre}
+                          </h3>
+                          <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                            {residencia.direccion}, {residencia.poblacion} • 
+                            Director: {director ? `${director.nombre} ${director.apellidos}` : 'Sin asignar'}
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#007bff', margin: '5px 0 0 0' }}>
+                            Plazas: {residencia.plazas_ocupadas}/{residencia.total_plazas} • 
+                            Personal: {personal.filter(p => p.residencia_id === residencia.id).length} • 
+                            Residentes: {residentes.filter(r => r.residencia_id === residencia.id).length}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                            onClick={() => iniciarFormulario('residencia', residencia)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button 
+                            onClick={() => eliminarElemento('residencia', residencia)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vista Trabajadores */}
+        {vistaActual === 'trabajadores' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Trabajadores</h2>
+              <button 
+                onClick={() => iniciarFormulario('trabajador')}
+                style={{ 
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Crear Trabajador
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              {personal.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                  <p style={{ fontSize: '18px', margin: '0' }}>No hay trabajadores registrados</p>
+                </div>
+              ) : (
+                personal.map((trabajador, index) => {
+                  const residencia = residencias.find(r => r.id === trabajador.residencia_id);
+                  return (
+                    <div key={trabajador.id} style={{ 
+                      padding: '20px',
+                      borderBottom: index < personal.length - 1 ? '1px solid #e9ecef' : 'none'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
+                            {trabajador.nombre} {trabajador.apellidos}
+                          </h3>
+                          <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                            DNI: {trabajador.dni} • Email: {trabajador.email} • 
+                            Residencia: {residencia ? residencia.nombre : 'Sin asignar'}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                            onClick={() => iniciarFormulario('trabajador', trabajador)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button 
+                            onClick={() => eliminarElemento('trabajador', trabajador)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vista Residentes */}
+        {vistaActual === 'residentes' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Residentes</h2>
+              <button 
+                onClick={() => iniciarFormulario('residente')}
+                style={{ 
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  backgroundColor: '#6f42c1',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Crear Residente
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              {residentes.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                  <p style={{ fontSize: '18px', margin: '0' }}>No hay residentes registrados</p>
+                </div>
+              ) : (
+                residentes.map((residente, index) => {
+                  const residencia = residencias.find(r => r.id === residente.residencia_id);
+                  return (
+                    <div key={residente.id} style={{ 
+                      padding: '20px',
+                      borderBottom: index < residentes.length - 1 ? '1px solid #e9ecef' : 'none'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
+                            {residente.nombre} {residente.apellidos}
+                          </h3>
+                          <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                            DNI: {residente.dni} • Historia: {residente.numero_historia} • 
+                            Dependencia: Grado {residente.grado_dependencia} • 
+                            Residencia: {residencia ? residencia.nombre : 'Sin asignar'}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                            onClick={() => iniciarFormulario('residente', residente)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button 
+                            onClick={() => eliminarElemento('residente', residente)}
+                            style={{ 
+                              padding: '8px 16px',
+                              fontSize: '14px',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vista Papelera */}
+        {vistaActual === 'papelera' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', margin: '0' }}>Papelera del Sistema</h2>
+              <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                Elementos eliminados (se borran automáticamente después de 5 años)
+              </p>
+            </div>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              {papelera.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                  <p style={{ fontSize: '18px', margin: '0' }}>La papelera está vacía</p>
+                </div>
+              ) : (
+                papelera.map((elemento, index) => (
+                  <div key={elemento.id} style={{ 
+                    padding: '20px',
+                    borderBottom: index < papelera.length - 1 ? '1px solid #e9ecef' : 'none'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ fontSize: '18px', color: '#333', margin: '0 0 5px 0' }}>
+                          {elemento.tipoEntidad}: {elemento.datos.nombre} {elemento.datos.apellidos || ''}
+                        </h3>
+                        <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
+                          Eliminado: {new Date(elemento.fechaEliminacion).toLocaleDateString('es-ES')} • 
+                          Por: {elemento.eliminadoPor} • 
+                          Expira: {new Date(elemento.fechaExpiracion).toLocaleDateString('es-ES')}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#dc3545', margin: '5px 0 0 0' }}>
+                          Motivo: {elemento.motivoEliminacion}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          onClick={() => restaurarElemento(elemento.id)}
+                          style={{ 
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Restaurar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PanelDesarrollador;

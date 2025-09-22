@@ -199,7 +199,7 @@ const DashboardDirector = () => {
           <div style={{ backgroundColor: config.color || '#666', color: 'white', padding: '20px', borderRadius: '10px 10px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: '24px', margin: '0 0 5px 0' }}>
-                {tipo === 'parte' ? (elemento.trabajador_nombre || 'Trabajador desconocido') : (elemento.nombre || elemento.residente_nombre || 'Sin nombre')} {elemento.apellidos || ''}
+                {elemento.nombre || elemento.residente_nombre || 'Sin nombre'} {elemento.apellidos || ''}
               </h2>
               <p style={{ margin: '0', opacity: 0.8 }}>
                 {tipo === 'parte' ? 'Parte Diario' : tipo.charAt(0).toUpperCase() + tipo.slice(1)}
@@ -218,9 +218,9 @@ const DashboardDirector = () => {
                 {tipo === 'parte' ? (
                   <>
                     <div><strong>Fecha:</strong> {new Date(elemento.fecha).toLocaleDateString('es-ES')}</div>
-                    <div><strong>Hora:</strong> {elemento.hora || 'No especificada'}</div>
-                    <div><strong>Residentes:</strong> {elemento.total_residentes || 0}</div>
-                    <div><strong>Incidencias:</strong> {elemento.residentes_con_incidencias || 0}</div>
+                    <div><strong>Turno:</strong> {elemento.turno || 'N/A'}</div>
+                    <div><strong>Residente:</strong> {elemento.residente_nombre}</div>
+                    <div><strong>Trabajador:</strong> {elemento.trabajador_nombre}</div>
                   </>
                 ) : (
                   <>
