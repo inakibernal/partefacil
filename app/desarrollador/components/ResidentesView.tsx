@@ -17,7 +17,7 @@ export default function ResidentesView({
   onEliminar: (residente: any) => void;
 }) {
   const agruparPorResidencia = () => {
-    const grupos = {};
+     const grupos: Record<string, any> = {};
     
     residentes.forEach(residente => {
       const residenciaId = residente.residencia_id || 'sin_asignar';
@@ -33,7 +33,7 @@ export default function ResidentesView({
     return grupos;
   };
 
-  const calcularEdad = (fechaNacimiento) => {
+  const calcularEdad = (fechaNacimiento: any) => {
     const today = new Date();
     const birthDate = new Date(fechaNacimiento);
     let age = today.getFullYear() - birthDate.getFullYear();

@@ -52,17 +52,17 @@ const PanelDesarrollador = () => {
   };
 
   // Función de búsqueda global
-  const buscarGlobal = (termino) => {
+  const buscarGlobal = (termino: any) => {
     if (!termino.trim()) {
       setSugerencias([]);
       return [];
     }
 
     const terminoLower = termino.toLowerCase();
-    const resultados = [];
+    const resultados: any[] = [];
 
     // Buscar en directores
-    directores.forEach(director => {
+    directores.forEach((director: any) => {
       const nombreCompleto = `${director.nombre} ${director.apellidos}`.toLowerCase();
       const coincidencias = [];
       
@@ -86,7 +86,7 @@ const PanelDesarrollador = () => {
     });
 
     // Buscar en residencias
-    residencias.forEach(residencia => {
+    residencias.forEach((residencia: any) => {
       const coincidencias = [];
       
       if (residencia.nombre?.toLowerCase().includes(terminoLower)) coincidencias.push('nombre');
