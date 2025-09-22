@@ -59,7 +59,7 @@ const PanelDesarrollador = () => {
     }
 
     const terminoLower = termino.toLowerCase();
-    const resultados = [];
+    const resultados: any[] = [];
 
     // Buscar en directores
     directores.forEach(director => {
