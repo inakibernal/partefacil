@@ -62,7 +62,7 @@ const PanelDesarrollador = () => {
     const resultados: any[] = [];
 
     // Buscar en directores
-    directores.forEach(director => {
+    directores.forEach((director: any) => {
       const nombreCompleto = `${director.nombre} ${director.apellidos}`.toLowerCase();
       const coincidencias = [];
       
