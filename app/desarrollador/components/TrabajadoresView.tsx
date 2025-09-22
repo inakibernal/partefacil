@@ -19,7 +19,7 @@ export default function TrabajadoresView({
   onEliminar: (trabajador: any) => void;
 }) {
   const agruparPorResidencia = () => {
-    const grupos = {};
+    const grupos: Record<string, any> = {};
     
     personal.forEach(trabajador => {
       const residenciaId = trabajador.residencia_id || 'sin_asignar';
