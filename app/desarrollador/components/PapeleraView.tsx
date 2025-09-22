@@ -190,7 +190,7 @@ export default function PapeleraView({
     return colores[tipo] || '#6c757d';
   };
 
-  const formatearNombre = (data) => {
+  const formatearNombre = (data: any) => {
     if (!data) return 'Sin datos';
     const nombre = data.nombre || 'Sin nombre';
     const apellidos = data.apellidos || '';
