@@ -86,7 +86,7 @@ const PanelDesarrollador = () => {
     });
 
     // Buscar en residencias
-    residencias.forEach(residencia => {
+    residencias.forEach((residencia: any) => {
       const coincidencias = [];
       
       if (residencia.nombre?.toLowerCase().includes(terminoLower)) coincidencias.push('nombre');
