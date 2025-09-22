@@ -52,7 +52,7 @@ const PanelDesarrollador = () => {
   };
 
   // Función de búsqueda global
-  const buscarGlobal = (termino) => {
+  const buscarGlobal = (termino: any) => {
     if (!termino.trim()) {
       setSugerencias([]);
       return [];
