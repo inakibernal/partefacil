@@ -171,7 +171,7 @@ export default function PapeleraView({
   };
 
   const obtenerIcono = (tipo: any) => {
-    const iconos = {
+    const iconos: Record<string,string> = {
       director: '👨‍💼',
       residencia: '🏢',
       trabajador: '👥',
