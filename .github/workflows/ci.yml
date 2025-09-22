@@ -27,7 +27,7 @@ jobs:
 
       # Activa estos pasos si tienes scripts definidos en package.json
       - name: Lint (opcional)
-        if: ${{ always() }}
+        continue-on-error: true
         run: npm run lint --if-present
 
       - name: Test (opcional)
