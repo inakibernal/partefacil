@@ -84,7 +84,7 @@ export default function ConfiguracionPage() {
               </p>
             </div>
 
-            {usuario.tipo === 'personal' && (
+            {(usuario as any)?.tipo === 'personal' && (
               <div className="mt-3 text-xs text-blue-600">
                 → Te llevará a: <strong>/turno-personal</strong>
               </div>
