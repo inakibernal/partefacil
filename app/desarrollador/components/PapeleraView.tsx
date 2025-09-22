@@ -197,7 +197,7 @@ export default function PapeleraView({
     return `${nombre} ${apellidos}`.trim();
   };
 
-  const formatearFecha = (fecha) => {
+  const formatearFecha = (fecha: any) => {
     try {
       return new Date(fecha).toLocaleString('es-ES');
     } catch {
