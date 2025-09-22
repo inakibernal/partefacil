@@ -96,7 +96,7 @@ export default function PapeleraView({
   const eliminarPermanentemente = (elementoId: any) => {
     if (typeof window !== 'undefined') {
       const papeleraActual = JSON.parse(localStorage.getItem('papelera_sistema') || '[]');
-      const papeleraActualizada = papeleraActual.filter(item => item.id !== elementoId);
+      const papeleraActualizada = papeleraActual.filter((item: any) => item.id !== elementoId);
       localStorage.setItem('papelera_sistema', JSON.stringify(papeleraActualizada));
       onRecargarDatos();
       setMostrarConfirmacion(null);
