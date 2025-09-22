@@ -484,10 +484,10 @@ export default function PapeleraView({
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2c3e50' }}>
-                {obtenerIcono(mostrarConfirmacion.tipo)} {formatearNombre(mostrarConfirmacion.data)}
+                {obtenerIcono((mostrarConfirmacion as any)?.tipo)} {formatearNombre((mostrarConfirmacion as any)?.data)}
               </div>
               <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
-                {mostrarConfirmacion.tipo} • DNI: {mostrarConfirmacion.data?.dni || 'N/A'}
+                {(mostrarConfirmacion as any)?.tipo} • DNI: {(mostrarConfirmacion as any)?.data?.dni || 'N/A'}
               </div>
             </div>
 
