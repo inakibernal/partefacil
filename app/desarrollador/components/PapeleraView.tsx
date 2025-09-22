@@ -180,8 +180,8 @@ export default function PapeleraView({
     return iconos[tipo] || '📄';
   };
 
-  const obtenerColor = (tipo) => {
-    const colores = {
+  const obtenerColor = (tipo: any) => {
+    const colores: Record<string,string> = {
       director: '#2c3e50',
       residencia: '#007bff',
       trabajador: '#28a745',
