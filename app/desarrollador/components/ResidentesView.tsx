@@ -17,7 +17,7 @@ export default function ResidentesView({
   onEliminar: (residente: any) => void;
 }) {
   const agruparPorResidencia = () => {
-     grupos: Record<string, any> = {};
+     const grupos: Record<string, any> = {};
     
     residentes.forEach(residente => {
       const residenciaId = residente.residencia_id || 'sin_asignar';
