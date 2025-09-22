@@ -520,7 +520,7 @@ export default function PapeleraView({
                 Cancelar
               </button>
               <button 
-                onClick={() => eliminarPermanentemente(mostrarConfirmacion.id)}
+                onClick={() => eliminarPermanentemente((mostrarConfirmacion as any)?.id)}
                 style={{ 
                   padding: '12px 30px', 
                   fontSize: '16px', 
