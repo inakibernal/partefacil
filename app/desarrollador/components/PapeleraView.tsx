@@ -170,7 +170,7 @@ export default function PapeleraView({
     }
   };
 
-  const obtenerIcono = (tipo) => {
+  const obtenerIcono = (tipo: any) => {
     const iconos = {
       director: '👨‍💼',
       residencia: '🏢',
