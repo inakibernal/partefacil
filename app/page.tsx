@@ -61,7 +61,7 @@ export default function HomePage() {
           {/* Botones principales */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center pt-6 md:pt-8 px-4">
             <a
-              href="/login"
+              href="/tarifa-unica"
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Tarifa Única
