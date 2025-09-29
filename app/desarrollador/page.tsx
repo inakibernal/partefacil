@@ -119,7 +119,7 @@ personal.forEach((trabajador: any) => {
       if (trabajador.titulacion?.toLowerCase().includes(terminoLower)) coincidencias.push('titulación');
       
       if (coincidencias.length > 0) {
-        const residencia = residencias.find(r => r.id == trabajador.residencia_id);
+	const residencia = residencias.find((r: any) => r.id == trabajador.residencia_id);
         resultados.push({
           id: trabajador.id,
           tipo: 'trabajador',
