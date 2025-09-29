@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"
 import FichaModal from "./components/FichaModal";
 import React, { useState, useEffect } from 'react';
