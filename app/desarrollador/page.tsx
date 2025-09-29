@@ -760,13 +760,14 @@ const PanelDesarrollador = () => {
                 </div>
               </>
             )}
+{fichaVisible && (
+  <FichaModal
+    elemento={fichaVisible.elemento}
+    tipo={fichaVisible.tipo}
+    onCerrar={() => setFichaVisible(null)}
+  />
+)}
 
-            {/* Fichas de otros tipos - placeholder para futuras mejoras */}
-            {tipo !== 'residente' && (
-              <div style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-                <p>Ficha detallada del {tipo} - Por implementar</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1195,14 +1196,6 @@ const PanelDesarrollador = () => {
             />
           )}
 
-      {/* Modal de Ficha */}
-      {fichaActiva && (
-        <FichaModal
-          elemento={fichaActiva.elemento}
-          tipo={fichaActiva.tipo}
-          onCerrar={() => setFichaActiva(null)}
-        />
-      )}
         </div>
       )}
 
