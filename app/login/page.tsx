@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       // Buscar en directores
       const directores = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
-      const director = directores.find((d) => d.dni === dni && d.contrasena === contrasena);
+      const director = directores.find((d: any) => d.dni === dni && d.contrasena === contrasena);
 
       if (director) {
         const sesion = {
@@ -37,12 +37,12 @@ export default function LoginPage() {
 
       // Buscar en personal
       const personal = JSON.parse(localStorage.getItem('personal_data') || '[]');
-      const empleado = personal.find((p) => p.dni === dni && p.contrasena === contrasena);
+      const empleado = personal.find((p: any) => p.dni === dni && p.contrasena === contrasena);
 
       if (empleado) {
         // Obtener info de la residencia del empleado
         const residencias = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
-        const residencia = residencias.find((r) => r.id == empleado.residencia_id);
+        const residencia = residencias.find((r: any) => r.id == empleado.residencia_id);
 
         const sesion = {
           rol: 'personal',
@@ -175,11 +175,10 @@ export default function LoginPage() {
           <br />• <strong>Personal:</strong> Acceden a partes diarios de su residencia
         </div>
 
-        {/*
-          Nota: se ha eliminado SOLO el bloque del enlace "Acceso desarrollador" del frontend
-          para que no sea visible, pero la ruta /desarrollador sigue accesible si se conoce el URL.
-        */}
+        {/* Enlace de desarrollador eliminado del frontend. 
+            La ruta /desarrollador sigue accesible si se conoce el URL directo. */}
       </div>
     </div>
   );
 }
+
