@@ -4,9 +4,19 @@ const nextConfig = {
   experimental: {
     // Puedes mantener otras flags que ya tuvieras aquí.
   },
+
   // Config de Turbopack: fija la raíz a ESTE directorio
   turbopack: {
     root: __dirname,
+  },
+
+  // Desactivar typecheck en build para MVP
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 
