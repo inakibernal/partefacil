@@ -109,7 +109,7 @@ const PanelDesarrollador = () => {
     });
 
     // Buscar en trabajadores
-    personal.forEach(trabajador => {
+personal.forEach((trabajador: any) => {
       const nombreCompleto = `${trabajador.nombre} ${trabajador.apellidos}`.toLowerCase();
       const coincidencias = [];
       
