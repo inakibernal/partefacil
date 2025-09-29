@@ -17,3 +17,21 @@ pnpm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+# Vercel / Turbopack / Cache
+.vercel/
+.turbo/
+**/.cache/
+
+# Editor swap files
+*.swp
+*.swo
+
+# Local backups (no versionar)
+*.bak
+*.bak_*
+*.save
+*~
+*.orig
+*.rej
+temp_check.txt
+

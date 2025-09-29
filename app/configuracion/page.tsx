@@ -84,12 +84,12 @@ export default function ConfiguracionPage() {
               </p>
             </div>
 
-            {usuario.tipo === 'personal' && (
+            {(usuario as any)?.tipo === 'personal' && (
               <div className="mt-3 text-xs text-blue-600">
                 → Te llevará a: <strong>/turno-personal</strong>
               </div>
             )}
-            {usuario.tipo === 'director' && (
+            {(usuario as any)?.tipo === 'director' && (
               <div className="mt-3 text-xs text-blue-600">
                 → Te llevará a: <strong>/informes</strong>
               </div>
@@ -139,12 +139,12 @@ export default function ConfiguracionPage() {
               </p>
             </div>
 
-            {usuario.tipo === 'personal' && (
+            {(usuario as any)?.tipo === 'personal' && (
               <div className="mt-3 text-xs text-green-600">
                 → Te llevará a: <strong>/turno-legal</strong>
               </div>
             )}
-            {usuario.tipo === 'director' && (
+            {(usuario as any)?.tipo === 'director' && (
               <div className="mt-3 text-xs text-green-600">
                 → Te llevará a: <strong>/admin/dashboard</strong>
               </div>
@@ -216,7 +216,7 @@ export default function ConfiguracionPage() {
               </button>
               <button
                 onClick={() => {
-                  if (usuario.tipo === 'personal') {
+                  if ((usuario as any)?.tipo === 'personal') {
                     router.push(currentMode === 'simple' ? '/turno-personal' : '/turno-legal');
                   } else {
                     router.push(currentMode === 'simple' ? '/informes' : '/admin/dashboard');

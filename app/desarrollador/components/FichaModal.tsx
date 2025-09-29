@@ -1,386 +1,465 @@
 "use client";
 import React from "react";
 
+type TipoElemento = "director" | "residencia" | "trabajador" | "residente";
+
 interface FichaModalProps {
   elemento: any;
-  tipo: 'director' | 'residencia' | 'trabajador' | 'residente';
+  tipo: TipoElemento;
   onCerrar: () => void;
+}
+
+const estilos: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: 16,
+  },
+  modal: {
+    width: "min(900px, 96vw)",
+    background: "#fff",
+    borderRadius: 12,
+    overflow: "hidden",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 20px",
+    color: "white",
+  },
+  content: {
+    padding: 20,
+    background: "#fff",
+  },
+  section: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottom: "1px solid #eef0f2",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    fontSize: 14,
+  },
+  label: {
+    fontWeight: 600,
+    color: "#333",
+  },
+  value: {
+    color: "#111",
+    wordBreak: "break-word",
+  },
+  footer: {
+    padding: 16,
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 12,
+    background: "#fafbfc",
+    borderTop: "1px solid #eef0f2",
+  },
+  pill: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12,
+    padding: "4px 10px",
+    borderRadius: 999,
+    background: "#f3f4f6",
+    color: "#111827",
+  },
+  list: {
+    margin: 0,
+    paddingLeft: 18,
+  },
+};
+
+function isEmpty(v: any) {
+  if (v === null || v === undefined) return true;
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object") return Object.keys(v).length === 0;
+  return false;
+}
+
+function coalesce<T = any>(obj: any, keys: string[], fallback: T = "" as unknown as T): T {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && !isEmpty(obj[k])) return obj[k] as T;
+  }
+  return fallback;
+}
+
+function renderField(label: string, value: any) {
+  if (isEmpty(value)) return null;
+  return (
+    <div style={estilos.field}>
+      <span style={estilos.label}>{label}</span>
+      <span style={estilos.value}>{String(value)}</span>
+    </div>
+  );
+}
+
+function renderCountPill(text: string, count?: number) {
+  if (count === undefined || count === null) return null;
+  return (
+    <span style={estilos.pill}>
+      <span>•</span>
+      <span>{text}: {count}</span>
+    </span>
+  );
 }
 
 export default function FichaModal({ elemento, tipo, onCerrar }: FichaModalProps) {
   if (!elemento) return null;
 
-  const estilos = {
-    overlay: {
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    },
-    modal: {
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      maxWidth: '800px',
-      width: '90%',
-      maxHeight: '90%',
-      overflow: 'auto',
-      boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
-    },
-    header: {
-      padding: '25px',
-      borderRadius: '12px 12px 0 0',
-      color: 'white',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    },
-    content: {
-      padding: '30px'
-    },
-    section: {
-      marginBottom: '25px'
-    },
-    sectionTitle: {
-      fontSize: '18px',
-      fontWeight: 'bold',
-      color: '#2c3e50',
-      marginBottom: '15px',
-      borderBottom: '2px solid #e9ecef',
-      paddingBottom: '8px'
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-      gap: '15px',
-      fontSize: '14px'
-    },
-    field: {
-      marginBottom: '10px'
-    },
-    label: {
-      fontWeight: 'bold',
-      color: '#495057'
-    },
-    value: {
-      color: '#666',
-      marginTop: '2px'
-    }
-  };
-
   const getHeaderColor = () => {
     switch (tipo) {
-      case 'director': return '#dc3545';
-      case 'residencia': return '#007bff';
-      case 'trabajador': return '#28a745';
-      case 'residente': return '#fd7e14';
-      default: return '#6c757d';
+      case "director": return "#2563eb";
+      case "residencia": return "#0ea5e9";
+      case "trabajador": return "#22c55e";
+      case "residente": return "#f59e0b";
+      default: return "#111827";
     }
   };
 
-  const getIcon = () => {
-    switch (tipo) {
-      case 'director': return '👔';
-      case 'residencia': return '🏢';
-      case 'trabajador': return '👨‍⚕️';
-      case 'residente': return '👤';
-      default: return '📋';
-    }
-  };
+  const HeaderTitle = () => {
+    const nombre = coalesce<string>(elemento, ["nombre"], "");
+    const apellidos = coalesce<string>(elemento, ["apellidos"], "");
+    const titulo = (() => {
+      switch (tipo) {
+        case "director": return "Ficha del Director";
+        case "residencia": return "Ficha de la Residencia";
+        case "trabajador": return "Ficha del Trabajador";
+        case "residente": return "Ficha del Residente";
+        default: return "Ficha";
+      }
+    })();
 
-  const calcularEdad = (fechaNacimiento: string) => {
-    if (!fechaNacimiento) return 'No especificada';
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return `${edad} años`;
-  };
+    const subtitulo =
+      tipo === "residencia"
+        ? coalesce<string>(elemento, ["nombre", "nombre_residencia"], "")
+        : [nombre, apellidos].filter(Boolean).join(" ");
 
-  const renderField = (label: string, value: any, formatter?: (val: any) => string) => {
-    if (value === undefined || value === null || value === '') return null;
-    
-    const displayValue = formatter ? formatter(value) : value;
-    
     return (
-      <div style={estilos.field}>
-        <div style={estilos.label}>{label}:</div>
-        <div style={estilos.value}>{displayValue}</div>
+      <div>
+        <h2 style={{ fontSize: 22, margin: "0 0 4px 0" }}>{titulo}</h2>
+        {!isEmpty(subtitulo) && (
+          <div style={{ opacity: 0.95 }}>{subtitulo}</div>
+        )}
       </div>
     );
   };
 
-  const renderDirector = () => (
-    <>
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>📋 Datos Personales</h3>
-        <div style={estilos.grid}>
-          {renderField('Nombre completo', `${elemento.nombre} ${elemento.apellidos}`)}
-          {renderField('DNI', elemento.dni)}
-          {renderField('Email', elemento.email)}
-          {renderField('Teléfono', elemento.telefono)}
-          {renderField('Fecha de nacimiento', elemento.fecha_nacimiento, (fecha) => 
-            `${new Date(fecha).toLocaleDateString('es-ES')} (${calcularEdad(fecha)})`
-          )}
-        </div>
-      </div>
-      
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🏠 Datos de Residencia</h3>
-        <div style={estilos.grid}>
-          {renderField('Dirección', elemento.direccion)}
-          {renderField('Población', elemento.poblacion)}
-          {renderField('Provincia', elemento.provincia)}
-          {renderField('Código postal', elemento.codigo_postal)}
-          {renderField('Ciudad', elemento.ciudad)}
-        </div>
-      </div>
-
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>💼 Datos Profesionales</h3>
-        <div style={estilos.grid}>
-          {renderField('Titulación', elemento.titulacion)}
-          {renderField('Experiencia', elemento.experiencia)}
-          {renderField('Número de colegiado', elemento.numero_colegiado)}
-        </div>
-      </div>
-
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🔐 Datos del Sistema</h3>
-        <div style={estilos.grid}>
-          {renderField('ID del sistema', elemento.id)}
-          {renderField('Fecha de creación', elemento.fecha_creacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
-          {renderField('Última modificación', elemento.fecha_modificacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
-        </div>
-      </div>
-    </>
+  const CloseButton = () => (
+    <button
+      onClick={onCerrar}
+      style={{
+        padding: "8px 12px",
+        fontSize: 14,
+        borderRadius: 8,
+        border: "1px solid rgba(255,255,255,0.5)",
+        background: "transparent",
+        color: "white",
+        cursor: "pointer",
+      }}
+      aria-label="Cerrar"
+    >
+      Cerrar
+    </button>
   );
 
-  const renderResidencia = () => (
-    <>
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🏢 Información Básica</h3>
-        <div style={estilos.grid}>
-          {renderField('Nombre', elemento.nombre)}
-          {renderField('CIF', elemento.cif)}
-          {renderField('Número de licencia', elemento.numero_licencia)}
-          {renderField('Tipo de centro', elemento.tipo_centro)}
-        </div>
-      </div>
+  const renderDirector = () => {
+    const nombre = coalesce(elemento, ["nombre"], "");
+    const apellidos = coalesce(elemento, ["apellidos"], "");
+    const dni = coalesce(elemento, ["dni", "dni_director"], "");
+    const email = coalesce(elemento, ["email", "correo"], "");
+    const telefono = coalesce(elemento, ["telefono", "telefono_movil", "telefono_fijo"], "");
+    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
+    const direccion = coalesce(elemento, ["direccion"], "");
+    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
+    const provincia = coalesce(elemento, ["provincia"], "");
+    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
+    const titulacion = coalesce(elemento, ["titulacion", "titulo_profesional"], "");
+    const experiencia = coalesce(elemento, ["experiencia", "anios_experiencia", "años_experiencia"], "");
+    const numColegiado = coalesce(elemento, ["numero_colegiado", "n_colegiado"], "");
+    const residencias = coalesce<any[]>(elemento, ["residencias"], []);
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>📍 Ubicación</h3>
-        <div style={estilos.grid}>
-          {renderField('Dirección', elemento.direccion)}
-          {renderField('Población', elemento.poblacion)}
-          {renderField('Provincia', elemento.provincia)}
-          {renderField('Código postal', elemento.codigo_postal)}
-          {renderField('Comunidad autónoma', elemento.comunidad_autonoma)}
+    return (
+      <>
+        <div style={estilos.section}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {renderCountPill("Residencias a cargo", Array.isArray(residencias) ? residencias.length : undefined)}
+          </div>
+          <div style={estilos.grid}>
+            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
+            {renderField("DNI", dni)}
+            {renderField("Email", email)}
+            {renderField("Teléfono", telefono)}
+            {renderField("Fecha de nacimiento", fechaNacimiento)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>📞 Contacto</h3>
-        <div style={estilos.grid}>
-          {renderField('Teléfono fijo', elemento.telefono_fijo)}
-          {renderField('Teléfono móvil', elemento.telefono_movil)}
-          {renderField('Email', elemento.email)}
-          {renderField('Página web', elemento.web)}
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
+          <div style={estilos.grid}>
+            {renderField("Dirección", direccion)}
+            {renderField("Población", poblacion)}
+            {renderField("Provincia", provincia)}
+            {renderField("Código Postal", codigoPostal)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>👥 Capacidad</h3>
-        <div style={estilos.grid}>
-          {renderField('Total plazas', elemento.total_plazas)}
-          {renderField('Plazas ocupadas', elemento.plazas_ocupadas)}
-          {renderField('Plazas disponibles', elemento.total_plazas - elemento.plazas_ocupadas)}
-          {renderField('Ocupación', `${Math.round((elemento.plazas_ocupadas / elemento.total_plazas) * 100)}%`)}
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Profesional</h3>
+          <div style={estilos.grid}>
+            {renderField("Titulación", titulacion)}
+            {renderField("Experiencia (años)", experiencia)}
+            {renderField("Nº Colegiado", numColegiado)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🔐 Datos del Sistema</h3>
-        <div style={estilos.grid}>
-          {renderField('ID del sistema', elemento.id)}
-          {renderField('ID del director', elemento.director_id)}
-          {renderField('Fecha de creación', elemento.fecha_creacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
-        </div>
-      </div>
-    </>
-  );
+        {!isEmpty(residencias) && Array.isArray(residencias) && (
+          <div style={estilos.section}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencias asociadas</h3>
+            <ul style={estilos.list}>
+              {residencias.map((r: any) => (
+                <li key={r.id || r.cif || r.nombre}>
+                  {coalesce(r, ["nombre"], "Residencia")} — {coalesce(r, ["poblacion"], "")} {coalesce(r, ["codigo_postal", "cp"], "")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </>
+    );
+  };
 
-  const renderTrabajador = () => (
-    <>
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>👨‍⚕️ Datos Personales</h3>
-        <div style={estilos.grid}>
-          {renderField('Nombre completo', `${elemento.nombre} ${elemento.apellidos}`)}
-          {renderField('DNI', elemento.dni)}
-          {renderField('Email', elemento.email)}
-          {renderField('Teléfono', elemento.telefono)}
-          {renderField('Fecha de nacimiento', elemento.fecha_nacimiento, (fecha) => 
-            `${new Date(fecha).toLocaleDateString('es-ES')} (${calcularEdad(fecha)})`
-          )}
-        </div>
-      </div>
+  const renderResidencia = () => {
+    const nombre = coalesce(elemento, ["nombre"], "");
+    const direccion = coalesce(elemento, ["direccion"], "");
+    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
+    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
+    const telefonoFijo = coalesce(elemento, ["telefono_fijo", "telefono"], "");
+    const telefonoMovil = coalesce(elemento, ["telefono_movil"], "");
+    const email = coalesce(elemento, ["email", "correo"], "");
+    const totalPlazas = coalesce(elemento, ["total_plazas"], "");
+    const plazasOcupadas = coalesce(elemento, ["plazas_ocupadas"], "");
+    const cif = coalesce(elemento, ["cif"], "");
+    const numeroLicencia = coalesce(elemento, ["numero_licencia", "licencia"], "");
+    const director = coalesce<any>(elemento, ["director"], null);
+    const personal = coalesce<any[]>(elemento, ["personal"], []);
+    const residentes = coalesce<any[]>(elemento, ["residentes"], []);
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🏠 Datos de Residencia</h3>
-        <div style={estilos.grid}>
-          {renderField('Dirección', elemento.direccion)}
-          {renderField('Población', elemento.poblacion)}
-          {renderField('Provincia', elemento.provincia)}
-          {renderField('Código postal', elemento.codigo_postal)}
-          {renderField('Ciudad', elemento.ciudad)}
+    return (
+      <>
+        <div style={estilos.section}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {renderCountPill("Personal", Array.isArray(personal) ? personal.length : undefined)}
+            {renderCountPill("Residentes", Array.isArray(residentes) ? residentes.length : undefined)}
+          </div>
+          <div style={estilos.grid}>
+            {renderField("Nombre", nombre)}
+            {renderField("CIF", cif)}
+            {renderField("Licencia", numeroLicencia)}
+            {renderField("Email", email)}
+            {renderField("Teléfono fijo", telefonoFijo)}
+            {renderField("Teléfono móvil", telefonoMovil)}
+            {renderField("Total plazas", totalPlazas)}
+            {renderField("Plazas ocupadas", plazasOcupadas)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>💼 Datos Profesionales</h3>
-        <div style={estilos.grid}>
-          {renderField('Titulación', elemento.titulacion)}
-          {renderField('Número de colegiado', elemento.numero_colegiado)}
-          {renderField('Turno', elemento.turno)}
-          {renderField('Fecha de inicio', elemento.fecha_inicio, (fecha) => 
-            new Date(fecha).toLocaleDateString('es-ES')
-          )}
-          {renderField('Salario mensual', elemento.salario, (sal) => `${sal}€`)}
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
+          <div style={estilos.grid}>
+            {renderField("Dirección", direccion)}
+            {renderField("Población", poblacion)}
+            {renderField("Código Postal", codigoPostal)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🔐 Datos del Sistema</h3>
-        <div style={estilos.grid}>
-          {renderField('ID del sistema', elemento.id)}
-          {renderField('ID residencia asignada', elemento.residencia_id)}
-          {renderField('Fecha de creación', elemento.fecha_creacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
-          {renderField('Última modificación', elemento.fecha_modificacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
-        </div>
-      </div>
-    </>
-  );
+        {!isEmpty(director) && (
+          <div style={estilos.section}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Director/a</h3>
+            <div style={estilos.grid}>
+              {renderField("Nombre", [coalesce(director, ["nombre"], ""), coalesce(director, ["apellidos"], "")].filter(Boolean).join(" "))}
+              {renderField("DNI", coalesce(director, ["dni"], ""))}
+              {renderField("Teléfono", coalesce(director, ["telefono", "telefono_movil", "telefono_fijo"], ""))}
+              {renderField("Email", coalesce(director, ["email"], ""))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
 
-  const renderResidente = () => (
-    <>
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>👤 Datos Personales</h3>
-        <div style={estilos.grid}>
-          {renderField('Nombre completo', `${elemento.nombre} ${elemento.apellidos}`)}
-          {renderField('DNI', elemento.dni)}
-          {renderField('Fecha de nacimiento', elemento.fecha_nacimiento, (fecha) => 
-            `${new Date(fecha).toLocaleDateString('es-ES')} (${calcularEdad(fecha)})`
-          )}
-          {renderField('Teléfono', elemento.telefono)}
-          {renderField('Habitación', elemento.habitacion)}
-        </div>
-      </div>
+  const renderTrabajador = () => {
+    const nombre = coalesce(elemento, ["nombre"], "");
+    const apellidos = coalesce(elemento, ["apellidos"], "");
+    const dni = coalesce(elemento, ["dni"], "");
+    const email = coalesce(elemento, ["email"], "");
+    const telefono = coalesce(elemento, ["telefono", "telefono_movil", "telefono_fijo"], "");
+    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
+    const direccion = coalesce(elemento, ["direccion"], "");
+    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
+    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
+    const titulacion = coalesce(elemento, ["titulacion", "titulo_profesional"], "");
+    const numColegiado = coalesce(elemento, ["numero_colegiado", "n_colegiado"], "");
+    const residencia = coalesce<any>(elemento, ["residencia"], null);
+    const director = coalesce<any>(elemento, ["director"], null);
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🏠 Datos de Residencia Anterior</h3>
-        <div style={estilos.grid}>
-          {renderField('Dirección', elemento.direccion)}
-          {renderField('Población', elemento.poblacion)}
-          {renderField('Código postal', elemento.codigo_postal)}
-          {renderField('Ciudad', elemento.ciudad)}
+    return (
+      <>
+        <div style={estilos.section}>
+          <div style={estilos.grid}>
+            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
+            {renderField("DNI", dni)}
+            {renderField("Email", email)}
+            {renderField("Teléfono", telefono)}
+            {renderField("Fecha de nacimiento", fechaNacimiento)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🏥 Datos Médicos</h3>
-        <div style={estilos.grid}>
-          {renderField('Grado de dependencia', elemento.grado_dependencia)}
-          {renderField('Fecha de ingreso', elemento.fecha_ingreso, (fecha) => 
-            new Date(fecha).toLocaleDateString('es-ES')
-          )}
-          {renderField('Observaciones médicas', elemento.observaciones_medicas)}
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
+          <div style={estilos.grid}>
+            {renderField("Dirección", direccion)}
+            {renderField("Población", poblacion)}
+            {renderField("Código Postal", codigoPostal)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>📞 Contacto de Emergencia</h3>
-        <div style={estilos.grid}>
-          {renderField('Nombre', elemento.contacto_emergencia_nombre)}
-          {renderField('Teléfono', elemento.contacto_emergencia_telefono)}
-          {renderField('Parentesco', elemento.contacto_emergencia_parentesco)}
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Profesional</h3>
+          <div style={estilos.grid}>
+            {renderField("Titulación", titulacion)}
+            {renderField("Nº Colegiado", numColegiado)}
+          </div>
         </div>
-      </div>
 
-      <div style={estilos.section}>
-        <h3 style={estilos.sectionTitle}>🔐 Datos del Sistema</h3>
-        <div style={estilos.grid}>
-          {renderField('ID del sistema', elemento.id)}
-          {renderField('ID residencia asignada', elemento.residencia_id)}
-          {renderField('Fecha de creación', elemento.fecha_creacion, (fecha) => 
-            new Date(fecha).toLocaleString('es-ES')
-          )}
+        {!isEmpty(residencia) && (
+          <div style={estilos.section}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencia</h3>
+            <div style={estilos.grid}>
+              {renderField("Nombre", coalesce(residencia, ["nombre"], ""))}
+              {renderField("Población", coalesce(residencia, ["poblacion"], ""))}
+              {renderField("C.P.", coalesce(residencia, ["codigo_postal", "cp"], ""))}
+            </div>
+          </div>
+        )}
+
+        {!isEmpty(director) && (
+          <div style={estilos.section}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Director/a</h3>
+            <div style={estilos.grid}>
+              {renderField("Nombre", [coalesce(director, ["nombre"], ""), coalesce(director, ["apellidos"], "")].filter(Boolean).join(" "))}
+              {renderField("DNI", coalesce(director, ["dni"], ""))}
+              {renderField("Teléfono", coalesce(director, ["telefono", "telefono_movil", "telefono_fijo"], ""))}
+              {renderField("Email", coalesce(director, ["email"], ""))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const renderResidente = () => {
+    const nombre = coalesce(elemento, ["nombre"], "");
+    const apellidos = coalesce(elemento, ["apellidos"], "");
+    const dni = coalesce(elemento, ["dni"], "");
+    const numeroHistoria = coalesce(elemento, ["numeroHistoria", "n_historia", "numero_historia"], "");
+    const edad = coalesce(elemento, ["edad"], "");
+    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
+    const direccion = coalesce(elemento, ["direccion"], "");
+    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
+    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
+    const residencia = coalesce<any>(elemento, ["residencia"], null);
+
+    return (
+      <>
+        <div style={estilos.section}>
+          <div style={estilos.grid}>
+            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
+            {renderField("DNI", dni)}
+            {renderField("Edad", edad)}
+            {renderField("Nº Historia", numeroHistoria)}
+            {renderField("Fecha de nacimiento", fechaNacimiento)}
+          </div>
         </div>
-      </div>
-    </>
-  );
+
+        <div style={estilos.section}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
+          <div style={estilos.grid}>
+            {renderField("Dirección", direccion)}
+            {renderField("Población", poblacion)}
+            {renderField("Código Postal", codigoPostal)}
+          </div>
+        </div>
+
+        {!isEmpty(residencia) && (
+          <div style={estilos.section}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencia</h3>
+            <div style={estilos.grid}>
+              {renderField("Nombre", coalesce(residencia, ["nombre"], ""))}
+              {renderField("Población", coalesce(residencia, ["poblacion"], ""))}
+              {renderField("C.P.", coalesce(residencia, ["codigo_postal", "cp"], ""))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
 
   const renderContent = () => {
     switch (tipo) {
-      case 'director': return renderDirector();
-      case 'residencia': return renderResidencia();
-      case 'trabajador': return renderTrabajador();
-      case 'residente': return renderResidente();
+      case "director": return renderDirector();
+      case "residencia": return renderResidencia();
+      case "trabajador": return renderTrabajador();
+      case "residente": return renderResidente();
       default: return <div>Tipo no reconocido</div>;
     }
   };
 
   return (
-    <div style={estilos.overlay}>
+    <div style={estilos.overlay} onClick={(e) => {
+      if (e.target === e.currentTarget) onCerrar();
+    }}>
       <div style={estilos.modal}>
         <div style={{ ...estilos.header, backgroundColor: getHeaderColor() }}>
-          <div>
-            <h2 style={{ fontSize: '24px', margin: '0 0 5px 0' }}>
-              {getIcon()} {elemento.nombre} {elemento.apellidos}
-            </h2>
-            <p style={{ margin: '0', opacity: 0.9, fontSize: '16px' }}>
-              {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
-            </p>
-          </div>
-          <button 
-            onClick={onCerrar}
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              cursor: 'pointer',
-              fontSize: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            ×
-          </button>
+          <HeaderTitle />
+          <CloseButton />
         </div>
-        
+
         <div style={estilos.content}>
           {renderContent()}
+        </div>
+
+        <div style={estilos.footer}>
+          <button
+            onClick={onCerrar}
+            style={{
+              padding: "10px 14px",
+              fontSize: 14,
+              borderRadius: 8,
+              border: "1px solid #d1d5db",
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            Cerrar
+          </button>
         </div>
       </div>
     </div>

@@ -50,7 +50,7 @@ export default function DashboardComercial() {
   };
 
   const obtenerIconoCCAA = (codigo: string) => {
-    const iconos = {
+    const iconos: Record<string,string> = {
       'AN': '🌅', 'CT': '🏛️', 'PV': '🏔️', 'MD': '🏛️', 'CL': '🏰',
       'VC': '🍊', 'GA': '🌊', 'AS': '⛰️', 'CB': '🏔️', 'MU': '🌶️',
       'EX': '🌳', 'AR': '🏺', 'RI': '🍷', 'NA': '🏔️', 'IB': '🏝️',

@@ -93,10 +93,10 @@ export default function PapeleraView({
     }
   });
 
-  const eliminarPermanentemente = (elementoId) => {
+  const eliminarPermanentemente = (elementoId: any) => {
     if (typeof window !== 'undefined') {
       const papeleraActual = JSON.parse(localStorage.getItem('papelera_sistema') || '[]');
-      const papeleraActualizada = papeleraActual.filter(item => item.id !== elementoId);
+      const papeleraActualizada = papeleraActual.filter((item: any) => item.id !== elementoId);
       localStorage.setItem('papelera_sistema', JSON.stringify(papeleraActualizada));
       onRecargarDatos();
       setMostrarConfirmacion(null);
@@ -170,8 +170,8 @@ export default function PapeleraView({
     }
   };
 
-  const obtenerIcono = (tipo) => {
-    const iconos = {
+  const obtenerIcono = (tipo: any) => {
+    const iconos: Record<string,string> = {
       director: '👨‍💼',
       residencia: '🏢',
       trabajador: '👥',
@@ -180,8 +180,8 @@ export default function PapeleraView({
     return iconos[tipo] || '📄';
   };
 
-  const obtenerColor = (tipo) => {
-    const colores = {
+  const obtenerColor = (tipo: any) => {
+    const colores: Record<string,string> = {
       director: '#2c3e50',
       residencia: '#007bff',
       trabajador: '#28a745',
@@ -190,14 +190,14 @@ export default function PapeleraView({
     return colores[tipo] || '#6c757d';
   };
 
-  const formatearNombre = (data) => {
+  const formatearNombre = (data: any) => {
     if (!data) return 'Sin datos';
     const nombre = data.nombre || 'Sin nombre';
     const apellidos = data.apellidos || '';
     return `${nombre} ${apellidos}`.trim();
   };
 
-  const formatearFecha = (fecha) => {
+  const formatearFecha = (fecha: any) => {
     try {
       return new Date(fecha).toLocaleString('es-ES');
     } catch {
@@ -484,10 +484,10 @@ export default function PapeleraView({
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2c3e50' }}>
-                {obtenerIcono(mostrarConfirmacion.tipo)} {formatearNombre(mostrarConfirmacion.data)}
+                {obtenerIcono((mostrarConfirmacion as any)?.tipo)} {formatearNombre((mostrarConfirmacion as any)?.data)}
               </div>
               <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
-                {mostrarConfirmacion.tipo} • DNI: {mostrarConfirmacion.data?.dni || 'N/A'}
+                {(mostrarConfirmacion as any)?.tipo} • DNI: {(mostrarConfirmacion as any)?.data?.dni || 'N/A'}
               </div>
             </div>
 
@@ -520,7 +520,7 @@ export default function PapeleraView({
                 Cancelar
               </button>
               <button 
-                onClick={() => eliminarPermanentemente(mostrarConfirmacion.id)}
+                onClick={() => eliminarPermanentemente((mostrarConfirmacion as any)?.id)}
                 style={{ 
                   padding: '12px 30px', 
                   fontSize: '16px', 

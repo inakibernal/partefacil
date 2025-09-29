@@ -78,7 +78,7 @@ export default function HomePage() {
           <div className="mt-6">
             <a
               href="/contacto"
-              className="text-gray-600 hover:text-blue-600 font-semibold py-3 px-6 text-lg transition-all duration-200 hover:bg-gray-100 rounded-lg inline-block"
+	      className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Contacto
             </a>
@@ -142,15 +142,6 @@ export default function HomePage() {
           </h2>
           <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
             Únete a más de 100 residencias que ya usan Parte Fácil para gestionar sus partes diarios
-          </p>
-          <a
-            href="/login"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-          >
-            Empezar Ahora
-          </a>
-          <p className="text-sm text-gray-500 mt-4">
-            Sin tarjeta de crédito • Soporte incluido
           </p>
         </div>
       </div>

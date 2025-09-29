@@ -1,210 +1,221 @@
+// app/utils/pdfGenerator.js
+// Generador de PDFs compatible con jspdf-autotable v2 y v3
+// - v2: doc.autoTable(opts)
+// - v3: autoTable(doc, opts)
+
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import { camposEstatales } from '../nuevo-parte/campos-legales.js';
+
+/** Ejecuta autotable sea v2 o v3 */
+function safeAutoTable(doc, opts) {
+  try {
+    if (typeof autoTable === 'function') {
+      // v3
+      return autoTable(doc, opts);
+    }
+  } catch (_) {
+    // ignoramos y probamos la otra ruta
+  }
+  if (doc && typeof doc.autoTable === 'function') {
+    // v2
+    return doc.autoTable(opts);
+  }
+  console.error('jspdf-autotable no disponible. Revisa la instalación.');
+  throw new Error('jspdf-autotable no disponible');
+}
+
+/** Devuelve el label visible para selects; para texto/number/time devuelve el valor tal cual */
+function mapToLabel(campoKey, value) {
+  const cfg = camposEstatales[campoKey];
+  if (!cfg) return value ?? '-';
+  if (cfg.tipo === 'select' && Array.isArray(cfg.opciones)) {
+    const found = cfg.opciones.find((o) => o.value === value);
+    if (found) return found.label;
+  }
+  return value ?? '-';
+}
+
+/** Valor final a imprimir (valor si existe, si no, defecto mapeado; si tampoco, '-') */
+function valorCampo(campoKey, datos) {
+  const cfg = camposEstatales[campoKey] || {};
+  const v = datos?.[campoKey];
+
+  if (v !== undefined && v !== null && v !== '') {
+    return mapToLabel(campoKey, v);
+  }
+  if (cfg.defecto !== undefined) {
+    return mapToLabel(campoKey, cfg.defecto);
+  }
+  return '-';
+}
+
+/** Crea las filas [Campo, Valor] para un residente */
+function filasResidente(datosParteDeResidente) {
+  const filas = [];
+  Object.entries(camposEstatales).forEach(([key, cfg]) => {
+    const label = cfg?.label ?? key;
+    const val = valorCampo(key, datosParteDeResidente);
+    filas.push([label, val]);
+  });
+  return filas;
+}
+
+/** Cabecera común del documento */
+function dibujarCabecera(doc, parte, marginX) {
+  let y = 40;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text(
+    `Parte diario — ${parte?.residencia_nombre ?? 'Residencia'}`,
+    marginX,
+    y
+  );
+  y += 18;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Fecha: ${parte?.fecha ?? '-'}  •  Hora: ${parte?.hora ?? '-'}`, marginX, y);
+  y += 16;
+
+  doc.text(
+    `Trabajador: ${parte?.trabajador_nombre ?? '-'}  •  DNI: ${parte?.trabajador_dni ?? '-'}`,
+    marginX,
+    y
+  );
+  y += 16;
+
+  const total = parte?.total_residentes ?? (parte?.residentes_detalle?.length ?? '-');
+  const conInc = parte?.residentes_con_incidencias ?? '-';
+  doc.text(
+    `Residentes: ${total}  •  Con incidencias: ${conInc}`,
+    marginX,
+    y
+  );
+  y += 22;
+
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y, 555, y);
+  y += 14;
+
+  return y;
+}
+
+/** Sección de un residente */
+function dibujarSeccionResidente(doc, residente, y, marginX) {
+  const encabezado =
+    `${residente?.nombre ?? ''} ${residente?.apellidos ?? ''}`.trim() || 'Residente';
+  const sub = `DNI: ${residente?.dni ?? '-'} • Edad: ${residente?.edad ?? '-'} años`;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(encabezado, marginX, y);
+  y += 14;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(sub, marginX, y);
+  y += 8;
+
+  const body = filasResidente(residente?.datos_parte || {});
+  safeAutoTable(doc, {
+    startY: y + 6,
+    head: [['Campo', 'Valor']],
+    body,
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: 4 },
+    headStyles: { fillColor: [240, 240, 240] },
+    columnStyles: { 0: { cellWidth: 220 }, 1: { cellWidth: 300 } },
+    margin: { left: marginX, right: 20 },
+  });
+
+  return (doc.lastAutoTable?.finalY ?? y) + 16;
+}
+
+function nombreArchivoParte(parte) {
+  const resid = (parte?.residencia_nombre || 'Residencia')
+    .replace(/\s+/g, '_')
+    .replace(/[^\w_-]/g, '');
+  return `parte_${resid}_${parte?.fecha || 'fecha'}.pdf`;
+}
 
 export class PDFGenerator {
-  
-  // Generar PDF de un parte diario individual
+  /** PDF de un parte individual (panel director o mis-partes) */
   static generarParteDiario(parte) {
-    const doc = new jsPDF();
-    
-    // Configuración inicial
-    doc.setFont('helvetica');
-    
-    // Header con logo/título
-    doc.setFontSize(20);
-    doc.setTextColor(44, 62, 80);
-    doc.text('PARTE DIARIO DE RESIDENCIA', 20, 25);
-    
-    // Línea separadora
-    doc.setDrawColor(52, 73, 94);
-    doc.setLineWidth(0.5);
-    doc.line(20, 30, 190, 30);
-    
-    // Información básica del parte
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    
-    const fechaFormateada = new Date(parte.fecha).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric'
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const M = 40;
+    let y = dibujarCabecera(doc, parte, M);
+
+    const residentes = Array.isArray(parte?.residentes_detalle)
+      ? parte.residentes_detalle
+      : [];
+
+    residentes.forEach((r, idx) => {
+      y = dibujarSeccionResidente(doc, r, y, M);
+      if (idx < residentes.length - 1 && y > 760) {
+        doc.addPage();
+        y = 40;
+      }
     });
-    
-    let yPos = 45;
-    
-    // Datos del parte
-    doc.text(`Fecha: ${fechaFormateada}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Hora: ${parte.hora || 'No especificada'}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Profesional: ${parte.trabajador_nombre}`, 20, yPos);
-    yPos += 8;
-    doc.text(`DNI Profesional: ${parte.trabajador_dni}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Residencia: ${parte.residencia_nombre}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Total Residentes: ${parte.total_residentes}`, 20, yPos);
-    yPos += 8;
-    doc.text(`Residentes con Incidencias: ${parte.residentes_con_incidencias}`, 20, yPos);
-    
-    yPos += 15;
-    
-    // Sección de residentes con incidencias
-    if (parte.residentes_con_incidencias > 0 && parte.residentes_detalle) {
-      doc.setFontSize(14);
-      doc.setTextColor(220, 53, 69);
-      doc.text('RESIDENTES CON INCIDENCIAS', 20, yPos);
-      yPos += 10;
-      
-      // Filtrar solo residentes con incidencias
-      const residentesConIncidencias = parte.residentes_detalle.filter(residente => {
-        return residente.datos_parte && Object.entries(residente.datos_parte).some(([campo, valor]) => {
-          // Aquí necesitaríamos los campos estatales para comparar con defecto
-          return valor && valor !== 'normal' && valor !== 'completo' && valor !== 'continente' && valor !== 'dispuesto' && valor !== 'tranquilo';
-        });
-      });
-      
-      residentesConIncidencias.forEach((residente, index) => {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${index + 1}. ${residente.nombre} ${residente.apellidos} (${residente.edad} años)`, 25, yPos);
-        yPos += 8;
-        
-        // Detallar las incidencias
-        Object.entries(residente.datos_parte).forEach(([campo, valor]) => {
-          if (valor && valor !== 'normal' && valor !== 'completo' && valor !== 'continente' && valor !== 'dispuesto' && valor !== 'tranquilo') {
-            doc.setFontSize(10);
-            doc.text(`   • ${campo.replace(/_/g, ' ')}: ${valor}`, 30, yPos);
-            yPos += 6;
-          }
-        });
-        yPos += 5;
-      });
-    } else {
-      doc.setFontSize(12);
-      doc.setTextColor(40, 167, 69);
-      doc.text('✓ Todos los residentes sin incidencias relevantes', 20, yPos);
-    }
-    
-    // Footer
-    yPos = 280;
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Documento generado el ${new Date().toLocaleString('es-ES')}`, 20, yPos);
-    doc.text('Sistema de Gestión de Residencias', 20, yPos + 5);
-    
-    // Descargar
-    const nombreArchivo = `Parte_Diario_${parte.fecha}_${parte.trabajador_nombre.replace(/\s+/g, '_')}.pdf`;
-    doc.save(nombreArchivo);
+
+    doc.save(nombreArchivoParte(parte));
   }
-  
-  // Generar PDF con múltiples partes (para director)
+
+  /** PDF con varios partes seleccionados (panel director) */
   static generarPartesMultiples(partes) {
-    const doc = new jsPDF();
-    
-    // Header principal
-    doc.setFontSize(18);
-    doc.setTextColor(44, 62, 80);
-    doc.text('INFORME CONSOLIDADO DE PARTES DIARIOS', 20, 25);
-    
-    doc.setFontSize(12);
-    doc.text(`Generado el: ${new Date().toLocaleString('es-ES')}`, 20, 35);
-    doc.text(`Total de partes: ${partes.length}`, 20, 42);
-    
-    // Línea separadora
-    doc.setDrawColor(52, 73, 94);
-    doc.line(20, 48, 190, 48);
-    
-    let yPos = 60;
-    
-    // Resumen estadístico
-    const totalResidentes = partes.reduce((sum, p) => sum + (p.total_residentes || 0), 0);
-    const totalIncidencias = partes.reduce((sum, p) => sum + (p.residentes_con_incidencias || 0), 0);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(0, 123, 255);
-    doc.text('RESUMEN ESTADÍSTICO', 20, yPos);
-    yPos += 12;
-    
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`• Total residentes monitorizados: ${totalResidentes}`, 25, yPos);
-    yPos += 8;
-    doc.text(`• Total incidencias registradas: ${totalIncidencias}`, 25, yPos);
-    yPos += 8;
-    doc.text(`• Promedio incidencias por parte: ${(totalIncidencias / partes.length).toFixed(1)}`, 25, yPos);
-    yPos += 15;
-    
-    // Tabla resumen de partes
-    const datosTabla = partes.map(parte => [
-      new Date(parte.fecha).toLocaleDateString('es-ES'),
-      parte.trabajador_nombre || 'N/A',
-      parte.residencia_nombre || 'N/A',
-      parte.total_residentes || 0,
-      parte.residentes_con_incidencias || 0
-    ]);
-    
-    doc.autoTable({
-      startY: yPos,
-      head: [['Fecha', 'Profesional', 'Residencia', 'Residentes', 'Incidencias']],
-      body: datosTabla,
-      theme: 'grid',
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [52, 73, 94] }
-    });
-    
-    // Descargar
-    const fechaHoy = new Date().toISOString().split('T')[0];
-    doc.save(`Informe_Partes_${fechaHoy}.pdf`);
-  }
-  
-  // Generar PDF de datos del desarrollador (exportación de datos)
-  static generarInformeDatos(tipo, datos, titulo) {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(16);
-    doc.setTextColor(44, 62, 80);
-    doc.text(`INFORME DE ${titulo.toUpperCase()}`, 20, 25);
-    
-    doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 20, 35);
-    doc.text(`Total registros: ${datos.length}`, 20, 42);
-    
-    doc.line(20, 48, 190, 48);
-    
-    // Convertir datos a tabla
-    if (datos.length > 0) {
-      const primerElemento = datos[0];
-      const columnas = Object.keys(primerElemento).filter(key => 
-        !key.startsWith('_') && key !== 'id' && key !== 'password' && key !== 'contrasena'
-      );
-      
-      const datosTabla = datos.map(item => 
-        columnas.map(col => {
-          let valor = item[col];
-          if (typeof valor === 'object') valor = JSON.stringify(valor);
-          if (typeof valor === 'string' && valor.length > 30) valor = valor.substring(0, 30) + '...';
-          return valor || 'N/A';
-        })
-      );
-      
-      doc.autoTable({
-        startY: 55,
-        head: [columnas.map(col => col.replace(/_/g, ' ').toUpperCase())],
-        body: datosTabla,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [52, 73, 94] }
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const M = 40;
+    let first = true;
+
+    partes.forEach((parte, iParte) => {
+      if (!first) doc.addPage();
+      first = false;
+
+      let y = dibujarCabecera(doc, parte, M);
+      const residentes = Array.isArray(parte?.residentes_detalle)
+        ? parte.residentes_detalle
+        : [];
+
+      residentes.forEach((r, idx) => {
+        y = dibujarSeccionResidente(doc, r, y, M);
+        if (idx < residentes.length - 1 && y > 760) {
+          doc.addPage();
+          y = 40;
+        }
       });
-    }
-    
-    doc.save(`Informe_${titulo}_${new Date().toISOString().split('T')[0]}.pdf`);
+    });
+
+    const nombre = `partes_${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(nombre);
+  }
+
+  /** Informe genérico tipo tabla (exportar datos del desarrollador) */
+  static generarInformeDatos(tipo, datos, titulo = 'Informe') {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const M = 40;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`${titulo}`, M, 40);
+
+    const claves = datos?.length ? Object.keys(datos[0]) : [];
+    const head = [claves];
+    const body = (datos || []).map((row) => claves.map((k) => String(row[k] ?? '-')));
+
+    safeAutoTable(doc, {
+      startY: 60,
+      head,
+      body,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [240, 240, 240] },
+      margin: { left: M, right: 20 },
+    });
+
+    doc.save(`${tipo || 'datos'}.pdf`);
   }
 }
+
+export default PDFGenerator;
+

@@ -1,38 +1,27 @@
 "use client";
-
 import * as React from "react";
-import { cn } from "../../lib/utils";
 
-export interface SelectOption {
-  label: string;
-  value: string;
-}
+type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & { items?: {value:string; label:string}[] };
 
-interface SelectProps
-  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "onChange"> {
-  options: SelectOption[];
-  onChange?: (value: string) => void;
-}
-
-export function Select({ className, options, value, onChange, ...props }: SelectProps) {
+export function Select(props: SelectProps) {
+  const { className = "", items = [], children, ...rest } = props;
   return (
-    <select
-      className={cn(
-        "h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black",
-        className
-      )}
-      value={value}
-      onChange={(e) => onChange?.(e.target.value)}
-      {...props}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
+    <select className={"rounded-md border px-3 py-2 text-sm " + className} {...rest}>
+      {children ? children : items.map(it => <option key={it.value} value={it.value}>{it.label}</option>)}
     </select>
   );
 }
 
-
-
+// Stubs compatibles con los imports existentes
+export function SelectTrigger({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={className} {...props} />;
+}
+export function SelectContent({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={className} {...props} />;
+}
+export function SelectItem({ children, value }: { children: React.ReactNode; value: string }) {
+  return <option value={value}>{children}</option>;
+}
+export function SelectValue({ placeholder }: { placeholder?: string }) {
+  return <>{placeholder}</>;
+}
