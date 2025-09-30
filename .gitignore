@@ -35,3 +35,4 @@ pnpm-debug.log*
 *.rej
 temp_check.txt
 
+.env.local
