@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const [dni, setDni] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const router = useRouter();
 
-  const iniciarSesion = async () => {
+const iniciarSesion = async () => {
     if (!dni || !contrasena) {
-      setError('DNI y contraseña son obligatorios');
+      setError('Email y contraseña son obligatorios');
       return;
     }
 
@@ -17,57 +20,35 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Buscar en directores
-      const directores = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
-      const director = directores.find((d: any) => d.dni === dni && d.contrasena === contrasena);
+      // 1. Autenticar directamente con email (usa DNI como email por ahora)
+      const { data: authData, error: errorAuth } = await supabase.auth.signInWithPassword({
+        email: dni,  // Por ahora, introduce el email directamente
+        password: contrasena,
+      });
 
-      if (director) {
-        const sesion = {
-          rol: 'director',
-          directorId: director.id,
-          dni: director.dni,
-          nombre: director.nombre,
-          apellidos: director.apellidos,
-          email: director.email,
-        };
-        localStorage.setItem('sesion_activa', JSON.stringify(sesion));
-        window.location.href = '/informes';
+      if (errorAuth) {
+        setError('Email o contraseña incorrectos');
+        setCargando(false);
         return;
       }
 
-      // Buscar en personal
-      const personal = JSON.parse(localStorage.getItem('personal_data') || '[]');
-      const empleado = personal.find((p: any) => p.dni === dni && p.contrasena === contrasena);
+      // 2. Sesión básica para compatibilidad
+      const sesion = {
+        usuarioId: authData.user.id,
+        email: authData.user.email,
+        rol: 'superadmin',  // Temporal, después lo sacamos de la BD
+      };
+      localStorage.setItem('sesion_activa', JSON.stringify(sesion));
 
-      if (empleado) {
-        // Obtener info de la residencia del empleado
-        const residencias = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
-        const residencia = residencias.find((r: any) => r.id == empleado.residencia_id);
-
-        const sesion = {
-          rol: 'personal',
-          personalId: empleado.id,
-          dni: empleado.dni,
-          nombre: empleado.nombre,
-          apellidos: empleado.apellidos,
-          email: empleado.email,
-          titulacion: empleado.titulacion,
-          residenciaId: empleado.residencia_id,
-          residenciaNombre: residencia?.nombre || 'Sin residencia',
-        };
-        localStorage.setItem('sesion_activa', JSON.stringify(sesion));
-        window.location.href = '/nuevo-parte';
-        return;
-      }
-
-      setError('DNI o contraseña incorrectos');
+      // 3. Redirigir
+      router.push('/desarrollador');
     } catch (error) {
+      console.error(error);
       setError('Error al iniciar sesión');
     } finally {
       setCargando(false);
     }
   };
-
   return (
     <div
       style={{
@@ -174,11 +155,7 @@ export default function LoginPage() {
           <br />• <strong>Directores:</strong> Acceden al panel de gestión completo
           <br />• <strong>Personal:</strong> Acceden a partes diarios de su residencia
         </div>
-
-        {/* Enlace de desarrollador eliminado del frontend. 
-            La ruta /desarrollador sigue accesible si se conoce el URL directo. */}
       </div>
     </div>
   );
 }
-
