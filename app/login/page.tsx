@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
-
+export const dynamic = 'force-dynamic';
 export default function LoginPage() {
   // Nota: usamos "dni" como campo de entrada pero aquí representa el EMAIL.
   const [dni, setDni] = useState("");
