@@ -225,7 +225,7 @@ const partes = partesJSON || [];
         .single();
 
       if (errorParte) {
-        console.error('Error creando parte:', errorParte);
+	console.error('Error creando parte:', JSON.stringify(errorParte, null, 2));
         alert('Error al guardar el parte');
         return;
       }
