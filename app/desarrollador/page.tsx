@@ -3,6 +3,7 @@
 import FichaModal from "./components/FichaModal";
 import React, { useState, useEffect } from 'react';
 import { SistemaGestion, SistemaPapelera, inicializarSistema } from '../utils/sistema.js';
+import { supabase } from '../../lib/supabase';
 import DirectoresView from "./components/DirectoresView";
 import ResidenciasView from "./components/ResidenciasView";
 import TrabajadoresView from "./components/TrabajadoresView";
@@ -36,8 +37,31 @@ const PanelDesarrollador = () => {
     cargarTodosDatos();
   }, []);
 
-  const cargarTodosDatos = () => {
-    if (typeof window !== 'undefined') {
+const cargarTodosDatos = async () => {
+  if (typeof window !== 'undefined') {
+    try {
+      // Cargar usuarios (directores, trabajadores) desde Supabase
+      const { data: usuariosData } = await supabase.rpc('obtener_todos_usuarios_admin');
+      const usuarios = usuariosData || [];
+      
+      // Separar por rol
+      const directoresData = usuarios.filter(u => u.rol === 'director');
+      const personalData = usuarios.filter(u => u.rol === 'trabajador');
+      
+      // TODO: Cargar residencias y residentes desde Supabase
+      // Por ahora mantener localStorage para estos
+      const residenciasData = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
+      const residentesData = JSON.parse(localStorage.getItem('residentes_data') || '[]');
+      const papeleraData = SistemaPapelera.obtenerPapelera();
+      
+      setDirectores(directoresData);
+      setResidencias(residenciasData);
+      setPersonal(personalData);
+      setResidentes(residentesData);
+      setPapelera(papeleraData);
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+      // Fallback a localStorage si falla
       const directoresData = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
       const residenciasData = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
       const personalData = JSON.parse(localStorage.getItem('personal_data') || '[]');
@@ -50,7 +74,8 @@ const PanelDesarrollador = () => {
       setResidentes(residentesData);
       setPapelera(papeleraData);
     }
-  };
+  }
+};
 
   // Función de búsqueda global
   const buscarGlobal = (termino: any) => {
