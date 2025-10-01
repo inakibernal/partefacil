@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { camposEstatales } from "./campos-legales.js";
 import { PDFGenerator } from "../utils/pdfGenerator.js";
+import { supabase } from '../../lib/supabase';
 
 type Dict<T = any> = Record<string | number, T>;
 
@@ -73,90 +74,115 @@ const NuevoPartePage = () => {
   };
 
   // Carga de datos y preparación de estructura por defecto para cada residente
-  const inicializar = () => {
-    const sesion = JSON.parse(localStorage.getItem("sesion_activa") || "{}");
+// Carga de datos desde Supabase
+const inicializar = async () => {
+  const sesion = JSON.parse(localStorage.getItem("sesion_activa") || "{}");
+      
+  if (!sesion.usuarioId || !sesion.email) {
+    window.location.href = "/login";
+    return;
+  }
 
-    if (!sesion.rol || !sesion.dni) {
+  try {
+    // 1. Obtener datos completos del usuario autenticado
+    const { data: usuario, error: errorUsuario } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', sesion.usuarioId)
+      .single();
+
+    if (errorUsuario || !usuario) {
+      alert("Error: No se encontraron datos del usuario");
       window.location.href = "/login";
       return;
     }
 
-    const directores = JSON.parse(localStorage.getItem("directores_sistema") || "[]");
-    const residencias = JSON.parse(localStorage.getItem("residencias_sistema") || "[]");
-    const personal = JSON.parse(localStorage.getItem("personal_data") || "[]");
-    const residentes = JSON.parse(localStorage.getItem("residentes_data") || "[]");
-    const partes = JSON.parse(localStorage.getItem("partes_completos") || "[]");
+    // 2. Obtener residencias asignadas al usuario
+    const { data: asignaciones, error: errorAsignaciones } = await supabase
+      .from('usuario_residencia')
+      .select('residencia_id, residencias(*)')
+      .eq('usuario_id', sesion.usuarioId);
 
-    let trabajadorData: any = null;
-    let residenciaAsignada: any = null;
-    let residentesDelTrabajador: any[] = [];
-
-    if (sesion.rol === "personal" || sesion.rol === "trabajador") {
-      trabajadorData = personal.find((p: any) => p.dni === sesion.dni);
-
-      if (!trabajadorData) {
-        alert("Error: No se encontraron datos del trabajador");
-        window.location.href = "/login";
-        return;
-      }
-
-      residenciaAsignada = residencias.find(
-        (r: any) => r.id == trabajadorData.residencia_id || r.id === parseInt(trabajadorData.residencia_id)
-      );
-
-      if (!residenciaAsignada && residencias.length > 0) {
-        residenciaAsignada = residencias[0];
-        trabajadorData.residencia_id = residenciaAsignada.id;
-        const personalActualizado = personal.map((p: any) =>
-          p.dni === sesion.dni ? { ...p, residencia_id: residenciaAsignada.id } : p
-        );
-        localStorage.setItem("personal_data", JSON.stringify(personalActualizado));
-        sesion.residenciaId = residenciaAsignada.id;
-        sesion.residenciaNombre = residenciaAsignada.nombre;
-        localStorage.setItem("sesion_activa", JSON.stringify(sesion));
-      }
-
-      residentesDelTrabajador = residentes.filter((residente: any) => residente.residencia_id == residenciaAsignada?.id);
-    } else if (sesion.rol === "director") {
-      const directorData = directores.find((d: any) => d.dni === sesion.dni);
-
-      if (!directorData) {
-        alert("Error: No se encontraron datos del director");
-        window.location.href = "/login";
-        return;
-      }
-
-      const residenciasDelDirector = residencias.filter((r: any) => r.director_id == directorData.id);
-      residenciaAsignada = residenciasDelDirector[0];
-      trabajadorData = directorData;
-
-      const idsResidencias = residenciasDelDirector.map((r: any) => r.id);
-      residentesDelTrabajador = residentes.filter((residente: any) => idsResidencias.includes(residente.residencia_id));
-    }
-
-    if (!residenciaAsignada || residentesDelTrabajador.length === 0) {
-      alert("No hay residentes asignados a esta residencia.");
+    if (errorAsignaciones || !asignaciones || asignaciones.length === 0) {
+      alert("No tienes residencias asignadas");
       return;
     }
 
+    // Por ahora, tomamos la primera residencia asignada
+    const residenciaAsignada = asignaciones[0].residencias;
+
+    // 3. Obtener residentes de esa residencia
+    const { data: residentes, error: errorResidentes } = await supabase
+      .from('residentes')
+      .select('*')
+      .eq('residencia_id', residenciaAsignada.id)
+      .eq('estado', 'activo');
+
+    if (errorResidentes) {
+      console.error('Error cargando residentes:', errorResidentes);
+      alert("Error al cargar residentes");
+      return;
+    }
+
+// 4. Obtener partes anteriores del usuario CON sus detalles
+    const { data: partes, error: errorPartes } = await supabase
+      .from('partes')
+      .select(`
+        *,
+        parte_residente (
+          *,
+          residentes (*)
+        )
+      `)
+      .eq('trabajador_id', sesion.usuarioId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (errorPartes) {
+      console.error('Error cargando partes:', errorPartes);
+    }
+
+    // Transformar formato Supabase a formato esperado por UI
+    const partesTransformados = (partes || []).map((parte: any) => ({
+      ...parte,
+      trabajador_dni: usuario.dni,
+      trabajador_nombre: `${usuario.nombre} ${usuario.apellidos}`,
+      residencia_nombre: residenciaAsignada.nombre,
+      residentes_detalle: (parte.parte_residente || []).map((pr: any) => ({
+        id: pr.residente_id,
+        dni: pr.residentes?.dni,
+        nombre: pr.residentes?.nombre,
+        apellidos: pr.residentes?.apellidos,
+        edad: pr.residentes?.fecha_nacimiento ? calcularEdad(pr.residentes.fecha_nacimiento) : 0,
+        datos_parte: pr.datos_parte,
+      })),
+    }));
+
+	// 5. Configurar estado
     setDatos({
       sesion,
-      trabajadorData,
+      trabajadorData: usuario,
       residenciaAsignada,
-      residentes: residentesDelTrabajador,
-      partesAnteriores: partes.filter((p: any) => p.trabajador_dni === sesion.dni),
+      residentes: residentes || [],  
+      partesAnteriores: partesTransformados,
     });
 
-    // Estado por residente con valores por defecto de camposEstatales
-    const datosIniciales: Dict<Dict> = {};
-    residentesDelTrabajador.forEach((residente: any) => {
-      datosIniciales[residente.id] = {};
-      Object.entries(camposEstatales).forEach(([campo, config]: any) => {
-        datosIniciales[residente.id][campo] = config?.defecto ?? "";
+    // 6. Inicializar estructura de datos para formulario
+    const nuevosDatos: Dict<Dict> = {};
+    (residentes || []).forEach((residente: any) => {
+      nuevosDatos[residente.id] = {};
+      Object.entries(camposEstatales as any).forEach(([k, cfg]: any) => {
+        nuevosDatos[residente.id][k] = cfg?.defecto ?? '';
       });
     });
-    setResidentesData(datosIniciales);
-  };
+    setResidentesData(nuevosDatos);
+
+  } catch (error) {
+    console.error('Error en inicializar:', error);
+    alert("Error al cargar datos");
+  }
+};
+
 
   // Incidencias = cualquier campo con valor distinto de su "defecto"
   const tieneIncidencias = (residenteId: number | string) => {
@@ -183,52 +209,54 @@ const NuevoPartePage = () => {
     localStorage.setItem(borradorKey(), JSON.stringify(b));
   };
 
-  // Guardar parte completo
-  const guardarParte = () => {
+  const guardarParte = async () => {
     if (!confirm("¿Guardar el parte diario completo?")) return;
 
-    const parte = {
-      id: Date.now(),
-      fecha: formulario.fecha,
-      hora: formulario.hora,
-      trabajador_nombre: `${datos.sesion.nombre} ${datos.sesion.apellidos}`,
-      trabajador_dni: datos.sesion.dni,
-      residencia_nombre: datos.residenciaAsignada?.nombre,
-      total_residentes: datos.residentes.length,
-      residentes_con_incidencias: datos.residentes.filter((r) => tieneIncidencias(r.id)).length,
-      residentes_detalle: datos.residentes.map((residente: any) => ({
-        id: residente.id,
-        dni: residente.dni,
-        nombre: residente.nombre,
-        apellidos: residente.apellidos,
-        edad: calcularEdad(residente.fecha_nacimiento),
+    try {
+      const { data: parteCreado, error: errorParte } = await supabase
+        .from('partes')
+        .insert({
+          residencia_id: datos.residenciaAsignada.id,
+          trabajador_id: datos.sesion.usuarioId,
+          fecha: formulario.fecha,
+          hora: formulario.hora,
+          total_residentes: datos.residentes.length,
+          residentes_con_incidencias: datos.residentes.filter((r) => tieneIncidencias(r.id)).length,
+        })
+        .select()
+        .single();
+
+      if (errorParte) {
+        console.error('Error creando parte:', errorParte);
+        alert('Error al guardar el parte');
+        return;
+      }
+
+      const detallesParteResidente = datos.residentes.map((residente: any) => ({
+        parte_id: parteCreado.id,
+        residente_id: residente.id,
         datos_parte: normalizarDatos(residentesData[residente.id] || {}),
-      })),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+        tiene_incidencias: tieneIncidencias(residente.id),
+      }));
 
-    const partesActuales = JSON.parse(localStorage.getItem("partes_completos") || "[]");
+      const { error: errorDetalles } = await supabase
+        .from('parte_residente')
+        .insert(detallesParteResidente);
 
-    const parteExistente = partesActuales.find(
-      (p: any) => p.fecha === parte.fecha && p.trabajador_dni === parte.trabajador_dni
-    );
+      if (errorDetalles) {
+        console.error('Error guardando detalles:', errorDetalles);
+        alert('Error al guardar detalles del parte');
+        return;
+      }
 
-    if (parteExistente) {
-      const partesActualizados = partesActuales.map((p: any) =>
-        p.id === parteExistente.id ? { ...parte, id: parteExistente.id, created_at: parteExistente.created_at } : p
-      );
-      localStorage.setItem("partes_completos", JSON.stringify(partesActualizados));
-      alert("Parte actualizado correctamente");
-    } else {
-      localStorage.setItem("partes_completos", JSON.stringify([...partesActuales, parte]));
-      alert(
-        `Parte guardado: ${datos.residentes.length} residentes, ${parte.residentes_con_incidencias} con incidencias`
-      );
+      alert(`Parte guardado: ${datos.residentes.length} residentes, ${parteCreado.residentes_con_incidencias} con incidencias`);
+      inicializar();
+    } catch (error) {
+      console.error('Error en guardarParte:', error);
+      alert('Error al guardar el parte');
     }
-
-    inicializar();
   };
+
 
   // Guardar un residente individual (borrador local, NO crea/actualiza parte completo)
   const guardarResidente = (residente: any) => {
