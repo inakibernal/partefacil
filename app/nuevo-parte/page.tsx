@@ -73,7 +73,6 @@ const NuevoPartePage = () => {
     }
   };
 
-  // Carga de datos y preparación de estructura por defecto para cada residente
 // Carga de datos desde Supabase
 const inicializar = async () => {
   const sesion = JSON.parse(localStorage.getItem("sesion_activa") || "{}");
@@ -84,12 +83,11 @@ const inicializar = async () => {
   }
 
   try {
-    // 1. Obtener datos completos del usuario autenticado
-    const { data: usuario, error: errorUsuario } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('id', sesion.usuarioId)
-      .single();
+    // 1. Obtener datos completos del usuario autenticado usando la función RPC
+    const { data: usuarioArray, error: errorUsuario } = await supabase
+      .rpc('obtener_perfil_usuario', { user_id: sesion.usuarioId });
+
+    const usuario = usuarioArray?.[0];
 
     if (errorUsuario || !usuario) {
       alert("Error: No se encontraron datos del usuario");
@@ -97,26 +95,21 @@ const inicializar = async () => {
       return;
     }
 
-    // 2. Obtener residencias asignadas al usuario
-    const { data: asignaciones, error: errorAsignaciones } = await supabase
-      .from('usuario_residencia')
-      .select('residencia_id, residencias(*)')
-      .eq('usuario_id', sesion.usuarioId);
+	// 2. Obtener residencias asignadas usando función RPC
+	const { data: asignaciones, error: errorAsignaciones } = await supabase
+	  .rpc('obtener_asignaciones_residencia', { user_id: sesion.usuarioId });
 
-    if (errorAsignaciones || !asignaciones || asignaciones.length === 0) {
-      alert("No tienes residencias asignadas");
-      return;
+	    if (errorAsignaciones || !asignaciones || asignaciones.length === 0) {
+	      alert("No tienes residencias asignadas");
+	      return;
     }
 
     // Por ahora, tomamos la primera residencia asignada
     const residenciaAsignada = asignaciones[0].residencias;
 
-    // 3. Obtener residentes de esa residencia
-    const { data: residentes, error: errorResidentes } = await supabase
-      .from('residentes')
-      .select('*')
-      .eq('residencia_id', residenciaAsignada.id)
-      .eq('estado', 'activo');
+	// 3. Obtener residentes usando función RPC
+	const { data: residentes, error: errorResidentes } = await supabase
+	  .rpc('obtener_residentes_usuario', { user_id: sesion.usuarioId });
 
     if (errorResidentes) {
       console.error('Error cargando residentes:', errorResidentes);
@@ -124,23 +117,15 @@ const inicializar = async () => {
       return;
     }
 
-// 4. Obtener partes anteriores del usuario CON sus detalles
-    const { data: partes, error: errorPartes } = await supabase
-      .from('partes')
-      .select(`
-        *,
-        parte_residente (
-          *,
-          residentes (*)
-        )
-      `)
-      .eq('trabajador_id', sesion.usuarioId)
-      .order('created_at', { ascending: false })
-      .limit(10);
+// 4. Obtener partes anteriores usando función RPC
+const { data: partesJSON, error: errorPartes } = await supabase
+  .rpc('obtener_partes_usuario', { user_id: sesion.usuarioId, limite: 10 });
 
-    if (errorPartes) {
-      console.error('Error cargando partes:', errorPartes);
-    }
+if (errorPartes) {
+console.error('Error cargando partes:', JSON.stringify(errorPartes, null, 2));
+}
+
+const partes = partesJSON || [];
 
     // Transformar formato Supabase a formato esperado por UI
     const partesTransformados = (partes || []).map((parte: any) => ({
@@ -158,7 +143,7 @@ const inicializar = async () => {
       })),
     }));
 
-	// 5. Configurar estado
+    // 5. Configurar estado
     setDatos({
       sesion,
       trabajadorData: usuario,
@@ -182,7 +167,6 @@ const inicializar = async () => {
     alert("Error al cargar datos");
   }
 };
-
 
   // Incidencias = cualquier campo con valor distinto de su "defecto"
   const tieneIncidencias = (residenteId: number | string) => {
