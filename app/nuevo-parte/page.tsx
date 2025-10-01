@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 import React, { useEffect, useState } from "react";
 import { camposEstatales } from "./campos-legales.js";
 import { PDFGenerator } from "../utils/pdfGenerator.js";
@@ -66,12 +67,25 @@ const NuevoPartePage = () => {
     return edad;
   };
 
-  const cerrarSesion = () => {
-    if (confirm("¿Seguro que deseas cerrar sesión?")) {
+const cerrarSesion = async () => {
+  if (confirm("¿Seguro que deseas cerrar sesión?")) {
+    try {
+      // 1. Cerrar sesión en Supabase
+      await supabase.auth.signOut();
+      
+      // 2. Limpiar localStorage
+      localStorage.removeItem("sesion_activa");
+      
+      // 3. Redirigir al login
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      // Forzar redirección aunque falle
       localStorage.removeItem("sesion_activa");
       window.location.href = "/login";
     }
-  };
+  }
+};
 
 // Carga de datos desde Supabase
 const inicializar = async () => {

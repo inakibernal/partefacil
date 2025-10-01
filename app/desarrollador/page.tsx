@@ -1,5 +1,6 @@
 // @ts-nocheck
-"use client"
+"use client";
+export const dynamic = 'force-dynamic';
 import FichaModal from "./components/FichaModal";
 import React, { useState, useEffect } from 'react';
 import { SistemaGestion, SistemaPapelera, inicializarSistema } from '../utils/sistema.js';
