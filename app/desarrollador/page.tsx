@@ -49,16 +49,19 @@ const cargarTodosDatos = async () => {
       const directoresData = usuarios.filter(u => u.rol === 'director');
       const personalData = usuarios.filter(u => u.rol === 'trabajador');
       
-      // TODO: Cargar residencias y residentes desde Supabase
-      // Por ahora mantener localStorage para estos
-      const residenciasData = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
-      const residentesData = JSON.parse(localStorage.getItem('residentes_data') || '[]');
+      // Cargar residencias desde Supabase
+      const { data: residenciasData } = await supabase.rpc('obtener_residencias_admin');
+      
+      // Cargar residentes desde Supabase
+      const { data: residentesData } = await supabase.rpc('obtener_residentes_admin');
+      
+      // Papelera sigue en localStorage por ahora
       const papeleraData = SistemaPapelera.obtenerPapelera();
       
       setDirectores(directoresData);
-      setResidencias(residenciasData);
+      setResidencias(residenciasData || []);
       setPersonal(personalData);
-      setResidentes(residentesData);
+      setResidentes(residentesData || []);
       setPapelera(papeleraData);
     } catch (error) {
       console.error('Error cargando datos:', error);
