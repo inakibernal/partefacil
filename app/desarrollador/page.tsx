@@ -10,6 +10,7 @@ import ResidenciasView from "./components/ResidenciasView";
 import TrabajadoresView from "./components/TrabajadoresView";
 import ResidentesView from "./components/ResidentesView";
 import PapeleraView from "./components/PapeleraView";
+import CrearUsuarioModal from "./components/CrearUsuarioModal";
 
 const PanelDesarrollador = () => {
   const [vistaActual, setVistaActual] = useState('directores');
@@ -24,6 +25,7 @@ const PanelDesarrollador = () => {
   const [fichaVisible, setFichaVisible] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [editandoElemento, setEditandoElemento] = useState(null);
+  const [modalCrearVisible, setModalCrearVisible] = useState<'trabajador' | 'director' | null>(null);
   
   // Estados del buscador
   const [busqueda, setBusqueda] = useState('');
@@ -1179,7 +1181,7 @@ personal.forEach((trabajador: any) => {
               directores={directores}
               onRecargarDatos={cargarTodosDatos}
               onMostrarFicha={(d) => mostrarFicha(d, 'director')}
-              onIniciarFormulario={iniciarFormulario}
+	      onIniciarFormulario={(tipo, elemento) => elemento ? iniciarFormulario(tipo, elemento) : setModalCrearVisible('director')}
               onEliminar={(d) => eliminarElemento(d, 'director')}
             />
           )}
@@ -1202,7 +1204,7 @@ personal.forEach((trabajador: any) => {
               directores={directores}
               onRecargarDatos={cargarTodosDatos}
               onMostrarFicha={(t) => mostrarFicha(t, 'trabajador')}
-              onIniciarFormulario={iniciarFormulario}
+	      onIniciarFormulario={(tipo, elemento) => elemento ? iniciarFormulario(tipo, elemento) : setModalCrearVisible('trabajador')}
               onEliminar={(t) => eliminarElemento(t, 'trabajador')}
             />
           )}
@@ -1235,6 +1237,20 @@ personal.forEach((trabajador: any) => {
           elemento={fichaVisible.elemento}
           tipo={fichaVisible.tipo}
           onCerrar={() => setFichaVisible(null)}
+        />
+      )}
+	{modalCrearVisible && (
+        <CrearUsuarioModal
+          rolPorDefecto={modalCrearVisible}
+          onClose={() => setModalCrearVisible(null)}
+          onSuccess={() => cargarTodosDatos()}
+        />
+      )}
+	{modalCrearVisible && (
+        <CrearUsuarioModal
+          rolPorDefecto={modalCrearVisible}
+          onClose={() => setModalCrearVisible(null)}
+          onSuccess={() => cargarTodosDatos()}
         />
       )}
     </div>
