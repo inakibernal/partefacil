@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, password, nombre, apellidos, dni, rol, telefono } = await req.json()
+    const { email, password, nombre, apellidos, dni, rol, telefono, empresas, residencias } = await req.json()
 
     if (!email || !password || !nombre || !apellidos || !dni || !rol) {
       throw new Error('Faltan campos obligatorios')
@@ -51,6 +51,29 @@ serve(async (req) => {
     await supabaseAdmin
       .from('usuario_login')
       .insert({ dni, email })
+
+    // 4. Insertar asignaciones según el rol
+    if (rol === 'director' && empresas && empresas.length > 0) {
+      const { error: errorEmpresas } = await supabaseAdmin
+        .from('usuario_empresa')
+        .insert(empresas.map(empresa_id => ({ 
+          usuario_id: authData.user.id, 
+          empresa_id 
+        })))
+      
+      if (errorEmpresas) throw errorEmpresas
+    }
+
+    if (rol === 'trabajador' && residencias && residencias.length > 0) {
+      const { error: errorResidencias } = await supabaseAdmin
+        .from('usuario_residencia')
+        .insert(residencias.map(residencia_id => ({ 
+          usuario_id: authData.user.id, 
+          residencia_id 
+        })))
+      
+      if (errorResidencias) throw errorResidencias
+    }
 
     return new Response(
       JSON.stringify({ success: true, user_id: authData.user.id }),
