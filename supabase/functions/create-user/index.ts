@@ -64,12 +64,13 @@ serve(async (req) => {
       if (errorEmpresas) throw errorEmpresas
     }
 
-    if (rol === 'trabajador' && residencias && residencias.length > 0) {
+if (rol === 'trabajador' && residencias && residencias.length > 0) {
       const { error: errorResidencias } = await supabaseAdmin
         .from('usuario_residencia')
         .insert(residencias.map(residencia_id => ({ 
           usuario_id: authData.user.id, 
-          residencia_id 
+          residencia_id,
+          rol_en_residencia: 'trabajador'
         })))
       
       if (errorResidencias) throw errorResidencias

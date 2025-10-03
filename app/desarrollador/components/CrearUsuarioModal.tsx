@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 
 interface CrearUsuarioModalProps {
   onClose: () => void;
@@ -8,17 +9,32 @@ interface CrearUsuarioModalProps {
 }
 
 export default function CrearUsuarioModal({ onClose, onSuccess, rolPorDefecto }: CrearUsuarioModalProps) {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     email: '',
     password: '',
     nombre: '',
     apellidos: '',
     dni: '',
     rol: rolPorDefecto,
-    telefono: ''
+    telefono: '',
+    empresas: [] as string[],
+    residencias: [] as string[]
   });
+  const [empresasDisponibles, setEmpresasDisponibles] = useState<any[]>([]);
+  const [residenciasDisponibles, setResidenciasDisponibles] = useState<any[]>([]);  
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  useEffect(() => {
+      cargarOpciones();
+    }, []);
+
+    const cargarOpciones = async () => {
+    const { data: empresas } = await supabase.rpc('obtener_empresas_disponibles');
+    const { data: residencias } = await supabase.rpc('obtener_residencias_disponibles');
+    
+    setEmpresasDisponibles(empresas || []);
+    setResidenciasDisponibles(residencias || []);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +156,51 @@ export default function CrearUsuarioModal({ onClose, onSuccess, rolPorDefecto }:
               style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
             />
           </div>
+{formData.rol === 'director' && (
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Empresas asignadas *</label>
+              <select
+                multiple
+                size={4}
+                value={formData.empresas}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setFormData({ ...formData, empresas: selected });
+                }}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              >
+                {empresasDisponibles.map((empresa) => (
+                  <option key={empresa.id} value={empresa.id}>
+                    {empresa.nombre} ({empresa.cif})
+                  </option>
+                ))}
+              </select>
+              <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>Mantén Ctrl/Cmd para seleccionar múltiples</small>
+            </div>
+          )}
 
+          {formData.rol === 'trabajador' && (
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Residencias asignadas *</label>
+              <select
+                multiple
+                size={4}
+                value={formData.residencias}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setFormData({ ...formData, residencias: selected });
+                }}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              >
+                {residenciasDisponibles.map((residencia) => (
+                  <option key={residencia.id} value={residencia.id}>
+                    {residencia.nombre}
+                  </option>
+                ))}
+              </select>
+              <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>Mantén Ctrl/Cmd para seleccionar múltiples</small>
+            </div>
+          )}
           {error && (
             <div style={{
               backgroundColor: '#f8d7da',
