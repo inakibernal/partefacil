@@ -102,4 +102,3 @@ export default function TarifaUnicaPage() {
     </div>
   )
 }
-export default TarifaUnica;
