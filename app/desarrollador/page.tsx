@@ -26,6 +26,7 @@ const PanelDesarrollador = () => {
   const [isClient, setIsClient] = useState(false);
   const [editandoElemento, setEditandoElemento] = useState(null);
   const [modalCrearVisible, setModalCrearVisible] = useState<'trabajador' | 'director' | null>(null);
+  const [empresasDisponibles, setEmpresasDisponibles] = useState([]);
   
   // Estados del buscador
   const [busqueda, setBusqueda] = useState('');
@@ -56,6 +57,10 @@ const cargarTodosDatos = async () => {
       
       // Cargar residentes desde Supabase
       const { data: residentesData } = await supabase.rpc('obtener_residentes_admin');
+
+      // Cargar empresas para selector
+      const { data: empresasData } = await supabase.rpc('obtener_empresas_disponibles');
+      setEmpresasDisponibles(empresasData || []);
       
       // Papelera sigue en localStorage por ahora
       const papeleraData = SistemaPapelera.obtenerPapelera();
@@ -279,6 +284,7 @@ personal.forEach((trabajador: any) => {
       { campo: 'codigo_postal', label: '¿Código postal?', tipo: 'text', req: true },
       { campo: 'titulo_profesional', label: '¿Título profesional?', tipo: 'text', placeholder: 'Ej: Licenciado en Medicina', req: true },
       { campo: 'experiencia', label: '¿Años de experiencia en gestión de residencias?', tipo: 'number', min: '0', req: true },
+      { campo: 'empresas_asignadas', label: '¿Empresas asignadas?', tipo: 'select_empresas_multiple', req: false },
       { campo: 'contrasena', label: '¿Contraseña temporal para acceso?', tipo: 'password', req: true },
       { campo: 'confirmar_contrasena', label: '¿Confirmar contraseña?', tipo: 'password', req: true }
     ],
@@ -308,10 +314,9 @@ personal.forEach((trabajador: any) => {
       { campo: 'ciudad', label: '¿Ciudad de residencia?', tipo: 'text', req: true },
       { campo: 'titulacion', label: '¿Titulación profesional?', tipo: 'text', placeholder: 'Ej: Auxiliar de Enfermería', req: true },
       { campo: 'numero_colegiado', label: '¿Número de colegiado? (opcional)', tipo: 'text', req: false },
-      { campo: 'turno', label: '¿Turno de trabajo?', tipo: 'select_turno', req: true },
+      { campo: 'turno', label: '¿Turno de trabajo?', tipo: 'select_turno', req: false },
       { campo: 'residencia_id', label: '¿Residencia asignada?', tipo: 'select_residencia', req: true },
       { campo: 'fecha_inicio', label: '¿Fecha de inicio?', tipo: 'date', req: true },
-      { campo: 'salario', label: '¿Salario mensual?', tipo: 'number', min: '0', placeholder: 'En euros', req: true },
       { campo: 'contrasena', label: '¿Contraseña temporal para acceso?', tipo: 'password', req: true },
       { campo: 'confirmar_contrasena', label: '¿Confirmar contraseña?', tipo: 'password', req: true }
     ],
@@ -428,72 +433,53 @@ personal.forEach((trabajador: any) => {
       setPasoActual(pasoActual - 1);
     }
   };
-
-  const guardarFormulario = () => {
-    const elementoConId = {
-      ...datosFormulario,
-      id: editandoElemento ? editandoElemento.id : Date.now(),
-      fecha_creacion: editandoElemento ? editandoElemento.fecha_creacion : new Date().toISOString(),
-      fecha_modificacion: new Date().toISOString(),
-      estado: 'activo',
-      creado_por: 'Desarrollador'
-    };
-
-    if (elementoConId.confirmar_contrasena) {
-      delete elementoConId.confirmar_contrasena;
+const guardarFormulario = async () => {
+    if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && !editandoElemento) {
+      try {
+	const payload = {
+        	  email: datosFormulario.email,
+  	      	  password: datosFormulario.contrasena,
+  	        nombre: datosFormulario.nombre,
+  	        apellidos: datosFormulario.apellidos,
+  	        dni: datosFormulario.dni,
+  	        rol: formularioActivo,
+      	   telefono: datosFormulario.telefono || '',
+          empresas: datosFormulario.empresas_ids || [],
+          residencias: datosFormulario.residencia_id ? [datosFormulario.residencia_id] : [],
+          fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
+          direccion: datosFormulario.direccion || null,
+          ciudad: datosFormulario.ciudad || null,
+          codigo_postal: datosFormulario.codigo_postal || null,
+          titulo_profesional: datosFormulario.titulo_profesional || null,
+          experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
+          titulacion: datosFormulario.titulacion || null,
+          numero_colegiado: datosFormulario.numero_colegiado || null,
+          turno: datosFormulario.turno || null,
+          fecha_inicio: datosFormulario.fecha_inicio || null
+        };
+        const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!data.success) { alert(`Error al crear ${formularioActivo}: ${data.error}`); return; }
+        alert(`${formularioActivo === 'director' ? 'Director' : 'Trabajador'} creado correctamente`);
+        setFormularioActivo(false); setPasoActual(0); setDatosFormulario({}); setEditandoElemento(null); cargarTodosDatos(); return;
+      } catch (error) { alert('Error de conexión'); return; }
     }
-
-    // Convertir IDs a números
-    if ((formularioActivo === 'residencia' || formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) {
-      elementoConId.residencia_id = parseInt(elementoConId.residencia_id);
-    }
-    if (formularioActivo === 'residencia' && elementoConId.director_id) {
-      elementoConId.director_id = parseInt(elementoConId.director_id);
-    }
-
-    // Determinar clave de almacenamiento
-    const claves = {
-      director: 'directores_sistema',
-      residencia: 'residencias_sistema',
-      trabajador: 'personal_data',
-      residente: 'residentes_data'
-    };
-    const claveAlmacenamiento = claves[formularioActivo];
-
-    const entidadesActuales = JSON.parse(localStorage.getItem(claveAlmacenamiento) || '[]');
-
-    let entidadesActualizadas;
-    if (editandoElemento) {
-      entidadesActualizadas = entidadesActuales.map(e => e.id === editandoElemento.id ? elementoConId : e);
-    } else {
-      entidadesActualizadas = [...entidadesActuales, elementoConId];
-    }
-
-    localStorage.setItem(claveAlmacenamiento, JSON.stringify(entidadesActualizadas));
-
-    setFormularioActivo(false);
-    setPasoActual(0);
-    setDatosFormulario({});
-    setEditandoElemento(null);
-    cargarTodosDatos();
-    
-    // Actualizar resultados de búsqueda si están activos
-    if (mostrandoResultados && busqueda) {
-      setTimeout(() => {
-        const nuevosResultados = buscarGlobal(busqueda);
-        setResultadosBusqueda(nuevosResultados);
-      }, 100);
-    }
-    
-    const accion = editandoElemento ? 'actualizado' : 'creado';
-    const tipos = {
-      director: 'Director',
-      residencia: 'Residencia', 
-      trabajador: 'Trabajador',
-      residente: 'Residente'
-    };
-    const tipo = tipos[formularioActivo] || 'Elemento';
-    alert(`${tipo} ${accion} correctamente`);
+    const elementoConId = { ...datosFormulario, id: editandoElemento ? editandoElemento.id : Date.now(), fecha_creacion: editandoElemento ? editandoElemento.fecha_creacion : new Date().toISOString(), fecha_modificacion: new Date().toISOString(), estado: 'activo', creado_por: 'Desarrollador' };
+    if (elementoConId.confirmar_contrasena) delete elementoConId.confirmar_contrasena;
+    if ((formularioActivo === 'residencia' || formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) elementoConId.residencia_id = parseInt(elementoConId.residencia_id);
+    if (formularioActivo === 'residencia' && elementoConId.director_id) elementoConId.director_id = parseInt(elementoConId.director_id);
+    const claves = { director: 'directores_sistema', residencia: 'residencias_sistema', trabajador: 'personal_data', residente: 'residentes_data' };
+    const entidadesActuales = JSON.parse(localStorage.getItem(claves[formularioActivo]) || '[]');
+    let entidadesActualizadas = editandoElemento ? entidadesActuales.map(e => e.id === editandoElemento.id ? elementoConId : e) : [...entidadesActuales, elementoConId];
+    localStorage.setItem(claves[formularioActivo], JSON.stringify(entidadesActualizadas));
+    setFormularioActivo(false); setPasoActual(0); setDatosFormulario({}); setEditandoElemento(null); cargarTodosDatos();
+    if (mostrandoResultados && busqueda) setTimeout(() => setResultadosBusqueda(buscarGlobal(busqueda)), 100);
+    const tipos = { director: 'Director', residencia: 'Residencia', trabajador: 'Trabajador', residente: 'Residente' };
+    alert(`${tipos[formularioActivo] || 'Elemento'} ${editandoElemento ? 'actualizado' : 'creado'} correctamente`);
   };
 
   const eliminarElemento = (elemento, tipo) => {
@@ -579,6 +565,7 @@ personal.forEach((trabajador: any) => {
           style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
         >
           <option value="">Seleccionar turno...</option>
+          <option value="no_aplica">NO APLICA</option>
           <option value="mañana">Mañana (07:00 - 15:00)</option>
           <option value="tarde">Tarde (15:00 - 23:00)</option>
           <option value="noche">Noche (23:00 - 07:00)</option>
@@ -620,6 +607,27 @@ personal.forEach((trabajador: any) => {
             resize: 'vertical'
           }}
         />
+      );
+    }
+
+    if (campo.tipo === 'select_empresas_multiple') {
+      return (
+        <select 
+          multiple
+          size={4}
+          value={datosFormulario.empresas_ids || []}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions, option => option.value);
+            setDatosFormulario({...datosFormulario, empresas_ids: selected});
+          }}
+          style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
+        >
+          {empresasDisponibles.map(empresa => (
+            <option key={empresa.id} value={empresa.id}>
+              {empresa.nombre}
+            </option>
+          ))}
+        </select>
       );
     }
 
@@ -1181,7 +1189,7 @@ personal.forEach((trabajador: any) => {
               directores={directores}
               onRecargarDatos={cargarTodosDatos}
               onMostrarFicha={(d) => mostrarFicha(d, 'director')}
-	      onIniciarFormulario={(tipo, elemento) => elemento ? iniciarFormulario(tipo, elemento) : setModalCrearVisible('director')}
+    	      onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
               onEliminar={(d) => eliminarElemento(d, 'director')}
             />
           )}
@@ -1204,7 +1212,7 @@ personal.forEach((trabajador: any) => {
               directores={directores}
               onRecargarDatos={cargarTodosDatos}
               onMostrarFicha={(t) => mostrarFicha(t, 'trabajador')}
-	      onIniciarFormulario={(tipo, elemento) => elemento ? iniciarFormulario(tipo, elemento) : setModalCrearVisible('trabajador')}
+              onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
               onEliminar={(t) => eliminarElemento(t, 'trabajador')}
             />
           )}
@@ -1215,7 +1223,7 @@ personal.forEach((trabajador: any) => {
               residencias={residencias}
               onRecargarDatos={cargarTodosDatos}
               onMostrarFicha={(r) => mostrarFicha(r, 'residente')}
-              onIniciarFormulario={iniciarFormulario}
+            onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
               onEliminar={(r) => eliminarElemento(r, 'residente')}
             />
           )}

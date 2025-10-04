@@ -39,6 +39,10 @@ const NuevoPartePage = () => {
   });
 
   const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
+  const [residenciasAsignadas, setResidenciasAsignadas] = useState<any[]>([]);
+  const [residenciaId, setResidenciaId] = useState<string | null>(null);
+
+  const estilos = {
 
   // ----------------- ESTILOS (inline, sin saltos “#xxxxxx”) -----------------
   const estilos = {

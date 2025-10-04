@@ -70,10 +70,6 @@ export default function TarifaUnicaPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-red-500 mr-2">•</span>
-                  Sin permanencia mínima
-                </li>
-                <li className="flex items-start">
-                  <span className="text-red-500 mr-2">•</span>
                   Sin coste de migración
                 </li>
               </ul>
@@ -96,18 +92,10 @@ export default function TarifaUnicaPage() {
             </div>
           </div>
 
-          <div className="text-center">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl text-lg transition-colors duration-200 shadow-lg hover:shadow-xl">
-              Empezar prueba gratuita de 30 días
-            </button>
-            <p className="text-sm text-gray-500 mt-4">Sin tarjeta de crédito requerida</p>
-          </div>
-        </div>
-
         <div className="text-center">
           <p className="text-gray-600 mb-4">¿Necesitas más información?</p>
           <a href="/contacto" className="text-blue-600 hover:text-blue-700 font-semibold">
-            Contacta con nuestro equipo comercial →
+            Contacta con nuestro equipo →
           </a>
         </div>
       </div>

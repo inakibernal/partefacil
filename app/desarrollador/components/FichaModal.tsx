@@ -9,459 +9,218 @@ interface FichaModalProps {
   onCerrar: () => void;
 }
 
-const estilos: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.45)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-    padding: 16,
-  },
-  modal: {
-    width: "min(900px, 96vw)",
-    background: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "16px 20px",
-    color: "white",
-  },
-  content: {
-    padding: 20,
-    background: "#fff",
-  },
-  section: {
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottom: "1px solid #eef0f2",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 12,
-  },
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-    fontSize: 14,
-  },
-  label: {
-    fontWeight: 600,
-    color: "#333",
-  },
-  value: {
-    color: "#111",
-    wordBreak: "break-word",
-  },
-  footer: {
-    padding: 16,
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 12,
-    background: "#fafbfc",
-    borderTop: "1px solid #eef0f2",
-  },
-  pill: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    fontSize: 12,
-    padding: "4px 10px",
-    borderRadius: 999,
-    background: "#f3f4f6",
-    color: "#111827",
-  },
-  list: {
-    margin: 0,
-    paddingLeft: 18,
-  },
+const colores = {
+  director: '#2c3e50',
+  residencia: '#007bff',
+  trabajador: '#28a745',
+  residente: '#6f42c1'
 };
 
-function isEmpty(v: any) {
-  if (v === null || v === undefined) return true;
-  if (typeof v === "string") return v.trim() === "";
-  if (Array.isArray(v)) return v.length === 0;
-  if (typeof v === "object") return Object.keys(v).length === 0;
-  return false;
-}
+const calcularEdad = (fechaNacimiento: string) => {
+  const today = new Date();
+  const birthDate = new Date(fechaNacimiento);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+};
 
-function coalesce<T = any>(obj: any, keys: string[], fallback: T = "" as unknown as T): T {
-  for (const k of keys) {
-    if (obj && obj[k] !== undefined && !isEmpty(obj[k])) return obj[k] as T;
-  }
-  return fallback;
-}
-
-function renderField(label: string, value: any) {
-  if (isEmpty(value)) return null;
+export default function FichaModal({ elemento, tipo, onCerrar }: FichaModalProps) {
+console.log('Elemento recibido:', elemento);
   return (
-    <div style={estilos.field}>
-      <span style={estilos.label}>{label}</span>
-      <span style={estilos.value}>{String(value)}</span>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16
+    }}>
+      <div style={{
+        width: 'min(900px, 96vw)', background: '#fff', borderRadius: 12,
+        overflow: 'auto', maxHeight: '90vh', boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
+      }}>
+        {/* Header */}
+        <div style={{
+          background: colores[tipo], color: 'white', padding: '16px 20px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 24 }}>{elemento.nombre} {elemento.apellidos || ''}</h2>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: 14 }}>Ficha de {tipo}</p>
+          </div>
+          <button onClick={onCerrar} style={{
+            background: '#dc3545', color: 'white', border: 'none',
+            borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 16
+          }}>✕ Cerrar</button>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: 24 }}>
+          {tipo === 'director' && <FichaDirector elemento={elemento} />}
+          {tipo === 'trabajador' && <FichaTrabajador elemento={elemento} />}
+          {tipo === 'residencia' && <FichaResidencia elemento={elemento} />}
+          {tipo === 'residente' && <FichaResidente elemento={elemento} />}
+        </div>
+      </div>
     </div>
   );
 }
 
-function renderCountPill(text: string, count?: number) {
-  if (count === undefined || count === null) return null;
+// Componentes específicos por tipo
+function FichaDirector({ elemento }: { elemento: any }) {
   return (
-    <span style={estilos.pill}>
-      <span>•</span>
-      <span>{text}: {count}</span>
-    </span>
+    <>
+      <Seccion titulo="Información Personal">
+        <Campo label="DNI" valor={elemento.dni} />
+        <Campo label="Email" valor={elemento.email} />
+        <Campo label="Teléfono" valor={elemento.telefono} />
+        <Campo label="Fecha nacimiento" valor={elemento.fecha_nacimiento ? new Date(elemento.fecha_nacimiento).toLocaleDateString('es-ES') : '-'} />
+        <Campo label="Edad" valor={elemento.fecha_nacimiento ? `${calcularEdad(elemento.fecha_nacimiento)} años` : '-'} />
+      </Seccion>
+      
+      <Seccion titulo="Dirección">
+        <Campo label="Dirección" valor={elemento.direccion} span />
+        <Campo label="Ciudad" valor={elemento.ciudad} />
+        <Campo label="Código postal" valor={elemento.codigo_postal} />
+      </Seccion>
+
+      <Seccion titulo="Información Profesional">
+        <Campo label="Título profesional" valor={elemento.titulo_profesional} />
+        <Campo label="Años de experiencia" valor={elemento.experiencia} />
+      </Seccion>
+    </>
   );
 }
 
-export default function FichaModal({ elemento, tipo, onCerrar }: FichaModalProps) {
-  if (!elemento) return null;
-
-  const getHeaderColor = () => {
-    switch (tipo) {
-      case "director": return "#2563eb";
-      case "residencia": return "#0ea5e9";
-      case "trabajador": return "#22c55e";
-      case "residente": return "#f59e0b";
-      default: return "#111827";
-    }
-  };
-
-  const HeaderTitle = () => {
-    const nombre = coalesce<string>(elemento, ["nombre"], "");
-    const apellidos = coalesce<string>(elemento, ["apellidos"], "");
-    const titulo = (() => {
-      switch (tipo) {
-        case "director": return "Ficha del Director";
-        case "residencia": return "Ficha de la Residencia";
-        case "trabajador": return "Ficha del Trabajador";
-        case "residente": return "Ficha del Residente";
-        default: return "Ficha";
-      }
-    })();
-
-    const subtitulo =
-      tipo === "residencia"
-        ? coalesce<string>(elemento, ["nombre", "nombre_residencia"], "")
-        : [nombre, apellidos].filter(Boolean).join(" ");
-
-    return (
-      <div>
-        <h2 style={{ fontSize: 22, margin: "0 0 4px 0" }}>{titulo}</h2>
-        {!isEmpty(subtitulo) && (
-          <div style={{ opacity: 0.95 }}>{subtitulo}</div>
-        )}
-      </div>
-    );
-  };
-
-  const CloseButton = () => (
-    <button
-      onClick={onCerrar}
-      style={{
-        padding: "8px 12px",
-        fontSize: 14,
-        borderRadius: 8,
-        border: "1px solid rgba(255,255,255,0.5)",
-        background: "transparent",
-        color: "white",
-        cursor: "pointer",
-      }}
-      aria-label="Cerrar"
-    >
-      Cerrar
-    </button>
-  );
-
-  const renderDirector = () => {
-    const nombre = coalesce(elemento, ["nombre"], "");
-    const apellidos = coalesce(elemento, ["apellidos"], "");
-    const dni = coalesce(elemento, ["dni", "dni_director"], "");
-    const email = coalesce(elemento, ["email", "correo"], "");
-    const telefono = coalesce(elemento, ["telefono", "telefono_movil", "telefono_fijo"], "");
-    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
-    const direccion = coalesce(elemento, ["direccion"], "");
-    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
-    const provincia = coalesce(elemento, ["provincia"], "");
-    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
-    const titulacion = coalesce(elemento, ["titulacion", "titulo_profesional"], "");
-    const experiencia = coalesce(elemento, ["experiencia", "anios_experiencia", "años_experiencia"], "");
-    const numColegiado = coalesce(elemento, ["numero_colegiado", "n_colegiado"], "");
-    const residencias = coalesce<any[]>(elemento, ["residencias"], []);
-
-    return (
-      <>
-        <div style={estilos.section}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {renderCountPill("Residencias a cargo", Array.isArray(residencias) ? residencias.length : undefined)}
-          </div>
-          <div style={estilos.grid}>
-            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
-            {renderField("DNI", dni)}
-            {renderField("Email", email)}
-            {renderField("Teléfono", telefono)}
-            {renderField("Fecha de nacimiento", fechaNacimiento)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
-          <div style={estilos.grid}>
-            {renderField("Dirección", direccion)}
-            {renderField("Población", poblacion)}
-            {renderField("Provincia", provincia)}
-            {renderField("Código Postal", codigoPostal)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Profesional</h3>
-          <div style={estilos.grid}>
-            {renderField("Titulación", titulacion)}
-            {renderField("Experiencia (años)", experiencia)}
-            {renderField("Nº Colegiado", numColegiado)}
-          </div>
-        </div>
-
-        {!isEmpty(residencias) && Array.isArray(residencias) && (
-          <div style={estilos.section}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencias asociadas</h3>
-            <ul style={estilos.list}>
-              {residencias.map((r: any) => (
-                <li key={r.id || r.cif || r.nombre}>
-                  {coalesce(r, ["nombre"], "Residencia")} — {coalesce(r, ["poblacion"], "")} {coalesce(r, ["codigo_postal", "cp"], "")}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  const renderResidencia = () => {
-    const nombre = coalesce(elemento, ["nombre"], "");
-    const direccion = coalesce(elemento, ["direccion"], "");
-    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
-    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
-    const telefonoFijo = coalesce(elemento, ["telefono_fijo", "telefono"], "");
-    const telefonoMovil = coalesce(elemento, ["telefono_movil"], "");
-    const email = coalesce(elemento, ["email", "correo"], "");
-    const totalPlazas = coalesce(elemento, ["total_plazas"], "");
-    const plazasOcupadas = coalesce(elemento, ["plazas_ocupadas"], "");
-    const cif = coalesce(elemento, ["cif"], "");
-    const numeroLicencia = coalesce(elemento, ["numero_licencia", "licencia"], "");
-    const director = coalesce<any>(elemento, ["director"], null);
-    const personal = coalesce<any[]>(elemento, ["personal"], []);
-    const residentes = coalesce<any[]>(elemento, ["residentes"], []);
-
-    return (
-      <>
-        <div style={estilos.section}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {renderCountPill("Personal", Array.isArray(personal) ? personal.length : undefined)}
-            {renderCountPill("Residentes", Array.isArray(residentes) ? residentes.length : undefined)}
-          </div>
-          <div style={estilos.grid}>
-            {renderField("Nombre", nombre)}
-            {renderField("CIF", cif)}
-            {renderField("Licencia", numeroLicencia)}
-            {renderField("Email", email)}
-            {renderField("Teléfono fijo", telefonoFijo)}
-            {renderField("Teléfono móvil", telefonoMovil)}
-            {renderField("Total plazas", totalPlazas)}
-            {renderField("Plazas ocupadas", plazasOcupadas)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
-          <div style={estilos.grid}>
-            {renderField("Dirección", direccion)}
-            {renderField("Población", poblacion)}
-            {renderField("Código Postal", codigoPostal)}
-          </div>
-        </div>
-
-        {!isEmpty(director) && (
-          <div style={estilos.section}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Director/a</h3>
-            <div style={estilos.grid}>
-              {renderField("Nombre", [coalesce(director, ["nombre"], ""), coalesce(director, ["apellidos"], "")].filter(Boolean).join(" "))}
-              {renderField("DNI", coalesce(director, ["dni"], ""))}
-              {renderField("Teléfono", coalesce(director, ["telefono", "telefono_movil", "telefono_fijo"], ""))}
-              {renderField("Email", coalesce(director, ["email"], ""))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  const renderTrabajador = () => {
-    const nombre = coalesce(elemento, ["nombre"], "");
-    const apellidos = coalesce(elemento, ["apellidos"], "");
-    const dni = coalesce(elemento, ["dni"], "");
-    const email = coalesce(elemento, ["email"], "");
-    const telefono = coalesce(elemento, ["telefono", "telefono_movil", "telefono_fijo"], "");
-    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
-    const direccion = coalesce(elemento, ["direccion"], "");
-    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
-    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
-    const titulacion = coalesce(elemento, ["titulacion", "titulo_profesional"], "");
-    const numColegiado = coalesce(elemento, ["numero_colegiado", "n_colegiado"], "");
-    const residencia = coalesce<any>(elemento, ["residencia"], null);
-    const director = coalesce<any>(elemento, ["director"], null);
-
-    return (
-      <>
-        <div style={estilos.section}>
-          <div style={estilos.grid}>
-            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
-            {renderField("DNI", dni)}
-            {renderField("Email", email)}
-            {renderField("Teléfono", telefono)}
-            {renderField("Fecha de nacimiento", fechaNacimiento)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
-          <div style={estilos.grid}>
-            {renderField("Dirección", direccion)}
-            {renderField("Población", poblacion)}
-            {renderField("Código Postal", codigoPostal)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Profesional</h3>
-          <div style={estilos.grid}>
-            {renderField("Titulación", titulacion)}
-            {renderField("Nº Colegiado", numColegiado)}
-          </div>
-        </div>
-
-        {!isEmpty(residencia) && (
-          <div style={estilos.section}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencia</h3>
-            <div style={estilos.grid}>
-              {renderField("Nombre", coalesce(residencia, ["nombre"], ""))}
-              {renderField("Población", coalesce(residencia, ["poblacion"], ""))}
-              {renderField("C.P.", coalesce(residencia, ["codigo_postal", "cp"], ""))}
-            </div>
-          </div>
-        )}
-
-        {!isEmpty(director) && (
-          <div style={estilos.section}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Director/a</h3>
-            <div style={estilos.grid}>
-              {renderField("Nombre", [coalesce(director, ["nombre"], ""), coalesce(director, ["apellidos"], "")].filter(Boolean).join(" "))}
-              {renderField("DNI", coalesce(director, ["dni"], ""))}
-              {renderField("Teléfono", coalesce(director, ["telefono", "telefono_movil", "telefono_fijo"], ""))}
-              {renderField("Email", coalesce(director, ["email"], ""))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  const renderResidente = () => {
-    const nombre = coalesce(elemento, ["nombre"], "");
-    const apellidos = coalesce(elemento, ["apellidos"], "");
-    const dni = coalesce(elemento, ["dni"], "");
-    const numeroHistoria = coalesce(elemento, ["numeroHistoria", "n_historia", "numero_historia"], "");
-    const edad = coalesce(elemento, ["edad"], "");
-    const fechaNacimiento = coalesce(elemento, ["fecha_nacimiento"], "");
-    const direccion = coalesce(elemento, ["direccion"], "");
-    const poblacion = coalesce(elemento, ["poblacion", "municipio"], "");
-    const codigoPostal = coalesce(elemento, ["codigo_postal", "cp"], "");
-    const residencia = coalesce<any>(elemento, ["residencia"], null);
-
-    return (
-      <>
-        <div style={estilos.section}>
-          <div style={estilos.grid}>
-            {renderField("Nombre", [nombre, apellidos].filter(Boolean).join(" "))}
-            {renderField("DNI", dni)}
-            {renderField("Edad", edad)}
-            {renderField("Nº Historia", numeroHistoria)}
-            {renderField("Fecha de nacimiento", fechaNacimiento)}
-          </div>
-        </div>
-
-        <div style={estilos.section}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Dirección</h3>
-          <div style={estilos.grid}>
-            {renderField("Dirección", direccion)}
-            {renderField("Población", poblacion)}
-            {renderField("Código Postal", codigoPostal)}
-          </div>
-        </div>
-
-        {!isEmpty(residencia) && (
-          <div style={estilos.section}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Residencia</h3>
-            <div style={estilos.grid}>
-              {renderField("Nombre", coalesce(residencia, ["nombre"], ""))}
-              {renderField("Población", coalesce(residencia, ["poblacion"], ""))}
-              {renderField("C.P.", coalesce(residencia, ["codigo_postal", "cp"], ""))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  const renderContent = () => {
-    switch (tipo) {
-      case "director": return renderDirector();
-      case "residencia": return renderResidencia();
-      case "trabajador": return renderTrabajador();
-      case "residente": return renderResidente();
-      default: return <div>Tipo no reconocido</div>;
-    }
+function FichaTrabajador({ elemento }: { elemento: any }) {
+  const turnos: Record<string, string> = {
+    mañana: 'Mañana (07:00 - 15:00)',
+    tarde: 'Tarde (15:00 - 23:00)',
+    noche: 'Noche (23:00 - 07:00)',
+    rotativo: 'Rotativo',
+    partido: 'Partido',
+    no_aplica: 'No aplica'
   };
 
   return (
-    <div style={estilos.overlay} onClick={(e) => {
-      if (e.target === e.currentTarget) onCerrar();
-    }}>
-      <div style={estilos.modal}>
-        <div style={{ ...estilos.header, backgroundColor: getHeaderColor() }}>
-          <HeaderTitle />
-          <CloseButton />
-        </div>
+    <>
+      <Seccion titulo="Información Personal">
+        <Campo label="DNI" valor={elemento.dni} />
+        <Campo label="Email" valor={elemento.email} />
+        <Campo label="Teléfono" valor={elemento.telefono} />
+        <Campo label="Fecha nacimiento" valor={elemento.fecha_nacimiento ? new Date(elemento.fecha_nacimiento).toLocaleDateString('es-ES') : '-'} />
+        <Campo label="Edad" valor={elemento.fecha_nacimiento ? `${calcularEdad(elemento.fecha_nacimiento)} años` : '-'} />
+      </Seccion>
 
-        <div style={estilos.content}>
-          {renderContent()}
-        </div>
+      <Seccion titulo="Dirección">
+        <Campo label="Dirección" valor={elemento.direccion} span />
+        <Campo label="Ciudad" valor={elemento.ciudad} />
+        <Campo label="Código postal" valor={elemento.codigo_postal} />
+      </Seccion>
 
-        <div style={estilos.footer}>
-          <button
-            onClick={onCerrar}
-            style={{
-              padding: "10px 14px",
-              fontSize: 14,
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            Cerrar
-          </button>
+      <Seccion titulo="Información Laboral">
+        <Campo label="Titulación" valor={elemento.titulacion} />
+        <Campo label="Número colegiado" valor={elemento.numero_colegiado || 'No especificado'} />
+        <Campo label="Turno" valor={turnos[elemento.turno] || elemento.turno} />
+        <Campo label="Fecha inicio" valor={elemento.fecha_inicio ? new Date(elemento.fecha_inicio).toLocaleDateString('es-ES') : '-'} />
+      </Seccion>
+    </>
+  );
+}
+
+function FichaResidencia({ elemento }: { elemento: any }) {
+  return (
+    <>
+      <Seccion titulo="Información General">
+        <Campo label="CIF" valor={elemento.cif} />
+        <Campo label="Número licencia" valor={elemento.numero_licencia} />
+        <Campo label="Email" valor={elemento.email} />
+      </Seccion>
+
+      <Seccion titulo="Ubicación">
+        <Campo label="Dirección" valor={elemento.direccion} span />
+        <Campo label="Población" valor={elemento.poblacion} />
+        <Campo label="Código postal" valor={elemento.codigo_postal} />
+      </Seccion>
+
+      <Seccion titulo="Contacto">
+        <Campo label="Teléfono fijo" valor={elemento.telefono_fijo} />
+        <Campo label="Teléfono móvil" valor={elemento.telefono_movil || 'No especificado'} />
+      </Seccion>
+
+      <Seccion titulo="Capacidad">
+        <Campo label="Total plazas" valor={elemento.total_plazas} />
+        <Campo label="Plazas ocupadas" valor={elemento.plazas_ocupadas} />
+        <Campo label="Plazas disponibles" valor={elemento.total_plazas - elemento.plazas_ocupadas} />
+        <Campo label="Ocupación" valor={`${Math.round((elemento.plazas_ocupadas / elemento.total_plazas) * 100)}%`} />
+      </Seccion>
+    </>
+  );
+}
+
+function FichaResidente({ elemento }: { elemento: any }) {
+  const grados: Record<string, string> = {
+    grado_i: 'Grado I - Dependencia moderada',
+    grado_ii: 'Grado II - Dependencia severa',
+    grado_iii: 'Grado III - Gran dependencia',
+    sin_dependencia: 'Sin dependencia reconocida'
+  };
+
+  return (
+    <>
+      <Seccion titulo="Información Personal">
+        <Campo label="DNI" valor={elemento.dni} />
+        <Campo label="Teléfono" valor={elemento.telefono || 'No disponible'} />
+        <Campo label="Fecha nacimiento" valor={new Date(elemento.fecha_nacimiento).toLocaleDateString('es-ES')} />
+        <Campo label="Edad" valor={`${calcularEdad(elemento.fecha_nacimiento)} años`} />
+      </Seccion>
+
+      <Seccion titulo="Dirección de Origen">
+        <Campo label="Dirección anterior" valor={elemento.direccion} span />
+        <Campo label="Ciudad" valor={elemento.ciudad} />
+        <Campo label="Código postal" valor={elemento.codigo_postal} />
+      </Seccion>
+
+      <Seccion titulo="Información de Dependencia">
+        <Campo label="Grado" valor={grados[elemento.grado_dependencia] || elemento.grado_dependencia} span />
+        <Campo label="Fecha ingreso" valor={new Date(elemento.fecha_ingreso).toLocaleDateString('es-ES')} />
+        <Campo label="Días en residencia" valor={Math.floor((new Date().getTime() - new Date(elemento.fecha_ingreso).getTime()) / (1000 * 60 * 60 * 24))} />
+      </Seccion>
+
+      {elemento.contacto_emergencia_nombre && (
+        <Seccion titulo="Contacto de Emergencia">
+          <Campo label="Nombre" valor={elemento.contacto_emergencia_nombre} />
+          <Campo label="Teléfono" valor={elemento.contacto_emergencia_telefono} />
+          <Campo label="Parentesco" valor={elemento.contacto_emergencia_parentesco} />
+        </Seccion>
+      )}
+
+      {elemento.observaciones_medicas && (
+        <div style={{ marginTop: 16, padding: 12, background: '#fff3cd', borderRadius: 8, border: '1px solid #ffc107' }}>
+          <strong style={{ display: 'block', marginBottom: 8, color: '#856404' }}>Observaciones Médicas:</strong>
+          <p style={{ margin: 0, color: '#856404' }}>{elemento.observaciones_medicas}</p>
         </div>
+      )}
+    </>
+  );
+}
+
+// Componentes auxiliares
+function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h3 style={{ fontSize: 18, color: '#333', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e9ecef' }}>
+        {titulo}
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+        {children}
       </div>
+    </div>
+  );
+}
+
+function Campo({ label, valor, span }: { label: string; valor: any; span?: boolean }) {
+  return (
+    <div style={span ? { gridColumn: '1 / -1' } : {}}>
+      <strong style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 4 }}>{label}:</strong>
+      <span style={{ fontSize: 15, color: '#333' }}>{valor || '-'}</span>
     </div>
   );
 }
