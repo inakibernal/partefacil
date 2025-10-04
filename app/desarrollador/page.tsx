@@ -434,26 +434,61 @@ personal.forEach((trabajador: any) => {
     }
   };
 const guardarFormulario = async () => {
+// Si está editando director o trabajador, usar función RPC de actualización
+    if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('actualizar_usuario', {
+          p_id: editandoElemento.id,
+          p_nombre: datosFormulario.nombre,
+          p_apellidos: datosFormulario.apellidos,
+          p_dni: datosFormulario.dni,
+          p_telefono: datosFormulario.telefono || '',
+          p_fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
+          p_direccion: datosFormulario.direccion || null,
+          p_ciudad: datosFormulario.ciudad || null,
+          p_codigo_postal: datosFormulario.codigo_postal || null,
+          p_titulo_profesional: datosFormulario.titulo_profesional || null,
+          p_experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
+          p_titulacion: datosFormulario.titulacion || null,
+          p_numero_colegiado: datosFormulario.numero_colegiado || null,
+          p_turno: datosFormulario.turno || null,
+          p_fecha_inicio: datosFormulario.fecha_inicio || null
+        });
+
+        if (error) throw error;
+
+        alert(`${formularioActivo === 'director' ? 'Director' : 'Trabajador'} actualizado correctamente`);
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al actualizar');
+        return;
+      }
+    }
     if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && !editandoElemento) {
       try {
 	const payload = {
         	  email: datosFormulario.email,
   	      	  password: datosFormulario.contrasena,
-  	        nombre: datosFormulario.nombre,
-  	        apellidos: datosFormulario.apellidos,
-  	        dni: datosFormulario.dni,
-  	        rol: formularioActivo,
-      	   telefono: datosFormulario.telefono || '',
-          empresas: datosFormulario.empresas_ids || [],
-          residencias: datosFormulario.residencia_id ? [datosFormulario.residencia_id] : [],
-          fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
-          direccion: datosFormulario.direccion || null,
-          ciudad: datosFormulario.ciudad || null,
-          codigo_postal: datosFormulario.codigo_postal || null,
-          titulo_profesional: datosFormulario.titulo_profesional || null,
-          experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
-          titulacion: datosFormulario.titulacion || null,
-          numero_colegiado: datosFormulario.numero_colegiado || null,
+  	          nombre: datosFormulario.nombre,
+  	          apellidos: datosFormulario.apellidos,
+  	          dni: datosFormulario.dni,
+  	          rol: formularioActivo,
+      		  telefono: datosFormulario.telefono || '',
+        	  empresas: datosFormulario.empresas_ids || [],
+        	  residencias: datosFormulario.residencia_id ? [datosFormulario.residencia_id] : [],
+        	  fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
+        	  direccion: datosFormulario.direccion || null,
+        	  ciudad: datosFormulario.ciudad || null,
+        	  codigo_postal: datosFormulario.codigo_postal || null,
+        	  titulo_profesional: datosFormulario.titulo_profesional || null,
+        	  experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
+        	  titulacion: datosFormulario.titulacion || null,
+        	  numero_colegiado: datosFormulario.numero_colegiado || null,
           turno: datosFormulario.turno || null,
           fecha_inicio: datosFormulario.fecha_inicio || null
         };
