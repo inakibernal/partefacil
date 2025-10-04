@@ -100,5 +100,6 @@ export default function TarifaUnicaPage() {
         </div>
       </div>
     </div>
+    </div>
   )
 }
