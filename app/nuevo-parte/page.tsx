@@ -42,8 +42,6 @@ const NuevoPartePage = () => {
   const [residenciasAsignadas, setResidenciasAsignadas] = useState<any[]>([]);
   const [residenciaId, setResidenciaId] = useState<string | null>(null);
 
-  const estilos = {
-
   // ----------------- ESTILOS (inline, sin saltos “#xxxxxx”) -----------------
   const estilos = {
     header: { backgroundColor: "#2c3e50", color: "white", padding: "15px", position: "sticky" as const, top: 0, zIndex: 1000 },
