@@ -9,6 +9,7 @@ import DirectoresView from "./components/DirectoresView";
 import ResidenciasView from "./components/ResidenciasView";
 import TrabajadoresView from "./components/TrabajadoresView";
 import ResidentesView from "./components/ResidentesView";
+import EmpresasView from "./components/EmpresasView";
 import PapeleraView from "./components/PapeleraView";
 import CrearUsuarioModal from "./components/CrearUsuarioModal";
 
@@ -16,6 +17,7 @@ const PanelDesarrollador = () => {
   const [vistaActual, setVistaActual] = useState('directores');
   const [directores, setDirectores] = useState([]);
   const [residencias, setResidencias] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [personal, setPersonal] = useState([]);
   const [residentes, setResidentes] = useState([]);
   const [papelera, setPapelera] = useState([]);
@@ -54,6 +56,10 @@ const cargarTodosDatos = async () => {
       
       // Cargar residencias desde Supabase
       const { data: residenciasData } = await supabase.rpc('obtener_residencias_admin');
+
+      // Cargar empresas desde Supabase
+      const { data: empresasData2 } = await supabase.rpc('obtener_empresas_admin');
+      setEmpresas(empresasData2 || []);
       
       // Cargar residentes desde Supabase
       const { data: residentesData } = await supabase.rpc('obtener_residentes_admin');
@@ -300,7 +306,8 @@ personal.forEach((trabajador: any) => {
       { campo: 'plazas_ocupadas', label: '¿Plazas actualmente ocupadas?', tipo: 'number', min: '0', req: true },
       { campo: 'cif', label: '¿CIF de la residencia?', tipo: 'text', placeholder: 'A12345678', req: true },
       { campo: 'numero_licencia', label: '¿Número de licencia?', tipo: 'text', req: true },
-      { campo: 'director_id', label: '¿Director responsable?', tipo: 'select_director', req: true }
+      { campo: 'director_id', label: '¿Director responsable?', tipo: 'select_director', req: true },
+      { campo: 'empresa_facturacion_id', label: '¿A qué empresa se facturará?', tipo: 'select_empresa', req: false }
     ],
     trabajador: [
       { campo: 'nombre', label: '¿Nombre del trabajador?', tipo: 'text', req: true },
@@ -336,6 +343,23 @@ personal.forEach((trabajador: any) => {
       { campo: 'contacto_emergencia_telefono', label: '¿Teléfono del contacto de emergencia?', tipo: 'tel', req: true },
       { campo: 'contacto_emergencia_parentesco', label: '¿Parentesco del contacto?', tipo: 'text', placeholder: 'Ej: Hijo/a, Hermano/a', req: true },
       { campo: 'observaciones_medicas', label: '¿Observaciones médicas? (opcional)', tipo: 'textarea', req: false }
+    ],
+    empresa: [
+      { campo: 'nombre', label: '¿Nombre de la empresa?', tipo: 'text', req: true },
+      { campo: 'cif', label: '¿CIF de la empresa?', tipo: 'text', placeholder: 'B12345678', req: true },
+      { campo: 'email_facturacion', label: '¿Email de facturación?', tipo: 'email', req: true },
+      { campo: 'direccion', label: '¿Dirección fiscal?', tipo: 'text', req: true },
+      { campo: 'codigo_postal', label: '¿Código postal?', tipo: 'text', req: true },
+      { campo: 'ciudad', label: '¿Ciudad?', tipo: 'text', req: true },
+      { campo: 'telefono', label: '¿Teléfono de contacto?', tipo: 'tel', req: true },
+      { campo: 'contacto_nombre', label: '¿Persona de contacto? (opcional)', tipo: 'text', req: false },
+      { campo: 'contacto_telefono', label: '¿Teléfono del contacto? (opcional)', tipo: 'tel', req: false },
+      { campo: 'notas', label: '¿Notas adicionales? (opcional)', tipo: 'textarea', req: false },
+      { campo: 'iban', label: '¿IBAN para domiciliación? (opcional)', tipo: 'text', placeholder: 'ES00 0000 0000 0000 0000 0000', req: false },
+      { campo: 'dia_facturacion', label: '¿Día de facturación mensual? (1-28)', tipo: 'number', min: '1', max: '28', req: false },
+      { campo: 'forma_pago', label: '¿Forma de pago?', tipo: 'select_forma_pago', req: false },
+      { campo: 'dias_vencimiento', label: '¿Días de vencimiento del pago?', tipo: 'number', min: '0', placeholder: '30', req: false },
+      { campo: 'descuento_porcentaje', label: '¿Descuento aplicado (%)? (opcional)', tipo: 'number', min: '0', max: '100', step: '0.01', req: false }
     ]
   };
 
@@ -489,8 +513,8 @@ const guardarFormulario = async () => {
         	  experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
         	  titulacion: datosFormulario.titulacion || null,
         	  numero_colegiado: datosFormulario.numero_colegiado || null,
-          turno: datosFormulario.turno || null,
-          fecha_inicio: datosFormulario.fecha_inicio || null
+	          turno: datosFormulario.turno || null,
+        	  fecha_inicio: datosFormulario.fecha_inicio || null
         };
         const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/create-user', {
           method: 'POST',
@@ -503,6 +527,114 @@ const guardarFormulario = async () => {
         setFormularioActivo(false); setPasoActual(0); setDatosFormulario({}); setEditandoElemento(null); cargarTodosDatos(); return;
       } catch (error) { alert('Error de conexión'); return; }
     }
+
+// Si es residencia nueva (no edición), usar RPC
+    if (formularioActivo === 'residencia' && !editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('crear_residencia', {
+          p_nombre: datosFormulario.nombre,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_poblacion: datosFormulario.poblacion,
+          p_telefono_fijo: datosFormulario.telefono_fijo,
+          p_telefono_movil: datosFormulario.telefono_movil || null,
+          p_email: datosFormulario.email,
+          p_total_plazas: parseInt(datosFormulario.total_plazas),
+          p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
+          p_cif: datosFormulario.cif,
+          p_numero_licencia: datosFormulario.numero_licencia,
+          p_director_id: datosFormulario.director_id,
+          p_empresa_id: null,
+          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null,
+        });
+
+        if (error) throw error;
+
+        alert('Residencia creada correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al crear residencia');
+        return;
+      }
+    }
+// Si es empresa nueva, usar RPC
+    if (formularioActivo === 'empresa' && !editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('crear_empresa', {
+          p_nombre: datosFormulario.nombre,
+          p_cif: datosFormulario.cif,
+          p_email_facturacion: datosFormulario.email_facturacion,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_ciudad: datosFormulario.ciudad,
+          p_telefono: datosFormulario.telefono,
+          p_contacto_nombre: datosFormulario.contacto_nombre || null,
+          p_contacto_telefono: datosFormulario.contacto_telefono || null,
+          p_notas: datosFormulario.notas || null,
+          p_iban: datosFormulario.iban || null,
+          p_dia_facturacion: datosFormulario.dia_facturacion ? parseInt(datosFormulario.dia_facturacion) : null,
+          p_forma_pago: datosFormulario.forma_pago || 'transferencia',
+          p_dias_vencimiento: datosFormulario.dias_vencimiento ? parseInt(datosFormulario.dias_vencimiento) : 30,
+          p_descuento_porcentaje: datosFormulario.descuento_porcentaje ? parseFloat(datosFormulario.descuento_porcentaje) : 0
+        });
+
+        if (error) throw error;
+
+        alert('Empresa creada correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al crear empresa');
+        return;
+      }
+    }
+
+    // Si está editando empresa, usar RPC de actualización
+    if (formularioActivo === 'empresa' && editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('actualizar_empresa', {
+          p_id: editandoElemento.id,
+          p_nombre: datosFormulario.nombre,
+          p_cif: datosFormulario.cif,
+          p_email_facturacion: datosFormulario.email_facturacion,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_ciudad: datosFormulario.ciudad,
+          p_telefono: datosFormulario.telefono,
+          p_contacto_nombre: datosFormulario.contacto_nombre || null,
+          p_contacto_telefono: datosFormulario.contacto_telefono || null,
+          p_notas: datosFormulario.notas || null,
+          p_iban: datosFormulario.iban || null,
+          p_dia_facturacion: datosFormulario.dia_facturacion ? parseInt(datosFormulario.dia_facturacion) : null,
+          p_forma_pago: datosFormulario.forma_pago || 'transferencia',
+          p_dias_vencimiento: datosFormulario.dias_vencimiento ? parseInt(datosFormulario.dias_vencimiento) : 30,
+          p_descuento_porcentaje: datosFormulario.descuento_porcentaje ? parseFloat(datosFormulario.descuento_porcentaje) : 0
+        });
+
+        if (error) throw error;
+
+        alert('Empresa actualizada correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al actualizar empresa');
+        return;
+      }
+    }
+
     const elementoConId = { ...datosFormulario, id: editandoElemento ? editandoElemento.id : Date.now(), fecha_creacion: editandoElemento ? editandoElemento.fecha_creacion : new Date().toISOString(), fecha_modificacion: new Date().toISOString(), estado: 'activo', creado_por: 'Desarrollador' };
     if (elementoConId.confirmar_contrasena) delete elementoConId.confirmar_contrasena;
     if ((formularioActivo === 'residencia' || formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) elementoConId.residencia_id = parseInt(elementoConId.residencia_id);
@@ -571,6 +703,37 @@ const guardarFormulario = async () => {
               {director.nombre} {director.apellidos} ({director.dni})
             </option>
           ))}
+        </select>
+      );
+    }
+
+    if (campo.tipo === 'select_empresa') {
+      return (
+        <select 
+          value={valor} 
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})} 
+          style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
+        >
+          <option value="">Sin empresa asignada</option>
+          {empresasDisponibles.map(empresa => (
+            <option key={empresa.id} value={empresa.id}>
+              {empresa.nombre} - {empresa.cif}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (campo.tipo === 'select_forma_pago') {
+      return (
+        <select 
+          value={valor || 'transferencia'} 
+          onChange={(e) => setDatosFormulario({...datosFormulario, [campo.campo]: e.target.value})} 
+          style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
+        >
+          <option value="transferencia">Transferencia bancaria</option>
+          <option value="domiciliacion">Domiciliación bancaria</option>
+          <option value="tarjeta">Tarjeta de crédito</option>
+          <option value="efectivo">Efectivo</option>
         </select>
       );
     }
@@ -934,7 +1097,8 @@ const guardarFormulario = async () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
           {[
             { label: 'Directores', count: directores.length, color: '#2c3e50' },
-            { label: 'Residencias', count: residencias.length, color: '#007bff' },
+	    { label: 'Empresas', count: empresas.length, color: '#17a2b8' },            
+	    { label: 'Residencias', count: residencias.length, color: '#007bff' },
             { label: 'Trabajadores', count: personal.length, color: '#28a745' },
             { label: 'Residentes', count: residentes.length, color: '#6f42c1' },
             { label: 'En Papelera', count: papelera.length, color: '#dc3545' }
@@ -1194,7 +1358,8 @@ const guardarFormulario = async () => {
         <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex' }}>
             {[
-              { id: 'directores', label: 'Directores', icon: '👨‍💼' },
+              { id: 'directores', label: 'Directores', icon: '👨‍'}, 
+	      { id: 'empresas', label: 'Empresas', icon: '🏢' },
               { id: 'residencias', label: 'Residencias', icon: '🏢' },
               { id: 'trabajadores', label: 'Trabajadores', icon: '👥' },
               { id: 'residentes', label: 'Residentes', icon: '🧓' },
@@ -1226,6 +1391,15 @@ const guardarFormulario = async () => {
               onMostrarFicha={(d) => mostrarFicha(d, 'director')}
     	      onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
               onEliminar={(d) => eliminarElemento(d, 'director')}
+            />
+          )}
+          {vistaActual === 'empresas' && (
+            <EmpresasView
+              empresas={empresas}
+              onRecargarDatos={cargarTodosDatos}
+              onMostrarFicha={(e) => mostrarFicha(e, 'empresa')}
+              onIniciarFormulario={iniciarFormulario}
+              onEliminar={(e) => eliminarElemento(e, 'empresa')}
             />
           )}
 
