@@ -66,7 +66,7 @@ const cargarTodosDatos = async () => {
 
       // Cargar empresas para selector
       const { data: empresasData } = await supabase.rpc('obtener_empresas_disponibles');
-      setEmpresasDisponibles(empresasData || []);
+      setEmpresasDisponibles(empresasData2 || []);
       
       // Papelera sigue en localStorage por ahora
       const papeleraData = SistemaPapelera.obtenerPapelera();
@@ -562,6 +562,40 @@ const guardarFormulario = async () => {
         return;
       }
     }
+// Si está editando residencia, usar RPC de actualización
+    if (formularioActivo === 'residencia' && editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('actualizar_residencia', {
+          p_id: editandoElemento.id,
+          p_nombre: datosFormulario.nombre,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_poblacion: datosFormulario.poblacion,
+          p_telefono_fijo: datosFormulario.telefono_fijo,
+          p_telefono_movil: datosFormulario.telefono_movil || null,
+          p_email: datosFormulario.email,
+          p_total_plazas: parseInt(datosFormulario.total_plazas),
+          p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
+          p_cif: datosFormulario.cif,
+          p_numero_licencia: datosFormulario.numero_licencia,
+          p_director_id: datosFormulario.director_id,
+          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
+        });
+
+        if (error) throw error;
+
+        alert('Residencia actualizada correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al actualizar residencia');
+        return;
+      }
+    }
 // Si es empresa nueva, usar RPC
     if (formularioActivo === 'empresa' && !editandoElemento) {
       try {
@@ -631,6 +665,78 @@ const guardarFormulario = async () => {
         return;
       } catch (error) {
         alert('Error al actualizar empresa');
+        return;
+      }
+    }
+// Si es residente nuevo, usar RPC
+    if (formularioActivo === 'residente' && !editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('crear_residente', {
+          p_nombre: datosFormulario.nombre,
+          p_apellidos: datosFormulario.apellidos,
+          p_dni: datosFormulario.dni,
+          p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
+          p_telefono: datosFormulario.telefono || null,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_ciudad: datosFormulario.ciudad,
+          p_grado_dependencia: datosFormulario.grado_dependencia,
+          p_residencia_id: datosFormulario.residencia_id,
+          p_fecha_ingreso: datosFormulario.fecha_ingreso,
+          p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
+          p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
+          p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
+          p_observaciones_medicas: datosFormulario.observaciones_medicas || null
+        });
+
+        if (error) throw error;
+
+        alert('Residente creado correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al crear residente');
+        return;
+      }
+    }
+
+    // Si está editando residente, usar RPC de actualización
+    if (formularioActivo === 'residente' && editandoElemento) {
+      try {
+        const { error } = await supabase.rpc('actualizar_residente', {
+          p_id: editandoElemento.id,
+          p_nombre: datosFormulario.nombre,
+          p_apellidos: datosFormulario.apellidos,
+          p_dni: datosFormulario.dni,
+          p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
+          p_telefono: datosFormulario.telefono || null,
+          p_direccion: datosFormulario.direccion,
+          p_codigo_postal: datosFormulario.codigo_postal,
+          p_ciudad: datosFormulario.ciudad,
+          p_grado_dependencia: datosFormulario.grado_dependencia,
+          p_residencia_id: datosFormulario.residencia_id,
+          p_fecha_ingreso: datosFormulario.fecha_ingreso,
+          p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
+          p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
+          p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
+          p_observaciones_medicas: datosFormulario.observaciones_medicas || null
+        });
+
+        if (error) throw error;
+
+        alert('Residente actualizado correctamente');
+        setFormularioActivo(false);
+        setPasoActual(0);
+        setDatosFormulario({});
+        setEditandoElemento(null);
+        cargarTodosDatos();
+        return;
+      } catch (error) {
+        alert('Error al actualizar residente');
         return;
       }
     }
