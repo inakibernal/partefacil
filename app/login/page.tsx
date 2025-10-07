@@ -57,13 +57,13 @@ const usuario = usuarioArray?.[0];
         })
       );
 
-      // 4) Redirigir por rol
+// 4) Redirigir por rol con window.location (más directo)
       if (usuario.rol === "superadmin") {
-        router.push("/desarrollador");
+        window.location.href = "/desarrollador";
       } else if (usuario.rol === "director") {
-        router.push("/informes");
+        window.location.href = "/informes";
       } else {
-        router.push("/nuevo-parte"); // trabajador por defecto
+        window.location.href = "/nuevo-parte"; // trabajador por defecto
       }
     } catch (e) {
       console.error(e);
