@@ -2,39 +2,71 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '../lib/supabase'
 
 export default function Navbar() {
   const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const checkSession = () => {
+useEffect(() => {
+    const checkSession = async () => {
       try {
-        const usuarioData = sessionStorage.getItem("usuario_logueado")
-        if (usuarioData) {
-          const usuario = JSON.parse(usuarioData)
-          setUsuarioLogueado(usuario)
+        // Verificar sesión de Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Obtener datos del usuario desde localStorage o Supabase
+          const sesionLocal = localStorage.getItem("sesion_activa");
+          if (sesionLocal) {
+            const usuario = JSON.parse(sesionLocal);
+            setUsuarioLogueado(usuario);
+          } else {
+            // Fallback: usar email de Supabase
+            setUsuarioLogueado({
+              nombre: session.user.email?.split('@')[0] || 'Usuario',
+              tipo: 'usuario'
+            });
+          }
+        } else {
+          setUsuarioLogueado(null);
         }
       } catch (error) {
-        console.log("Error al verificar usuario:", error)
+        console.log("Error al verificar usuario:", error);
+        setUsuarioLogueado(null);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
     
-    checkSession()
+    checkSession();
     
     // Verificar cada 5 segundos si cambió la sesión
-    const interval = setInterval(checkSession, 5000)
+    const interval = setInterval(checkSession, 5000);
     
-    return () => clearInterval(interval)
+    return () => clearInterval(interval);
   }, [])
 
-  const cerrarSesion = () => {
-    sessionStorage.removeItem("usuario_logueado")
-    setUsuarioLogueado(null)
-    window.location.href = "/"
+   const cerrarSesion = async () => {
+    try {
+      // 1. Cerrar sesión en Supabase
+      await supabase.auth.signOut();
+      
+      // 2. Limpiar localStorage
+      localStorage.removeItem("sesion_activa");
+      
+      // 3. Actualizar estado local
+      setUsuarioLogueado(null);
+      
+      // 4. Redirigir a home
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      // Forzar limpieza aunque falle
+      localStorage.removeItem("sesion_activa");
+      setUsuarioLogueado(null);
+      window.location.href = "/";
+    }
   }
 
   const toggleMenu = () => {

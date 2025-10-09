@@ -1205,16 +1205,32 @@ const guardarFormulario = async () => {
       {/* Header */}
       <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '28px', margin: '0 0 10px 0' }}>Panel de Desarrollador</h1>
-            <p style={{ margin: '0', opacity: 0.8 }}>Gestión completa del sistema</p>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div>
+              <h1 style={{ fontSize: '28px', margin: '0 0 10px 0' }}>🔧 Panel de Desarrollador</h1>
+              <p style={{ margin: '0', opacity: 0.8 }}>Gestión completa del sistema</p>
+            </div>
+            <button 
+              onClick={() => {
+                if (confirm('¿Seguro que deseas cerrar sesión?')) {
+                  localStorage.removeItem('sesion_activa');
+                  window.location.href = '/login';
+                }
+              }}
+              style={{ 
+                padding: '12px 20px', 
+                fontSize: '14px', 
+                backgroundColor: '#dc3545', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Cerrar Sesión
+            </button>
           </div>
-          <button 
-            onClick={() => window.location.href = '/login'}
-            style={{ padding: '12px 20px', fontSize: '14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-          >
-            Iniciar sesión
-          </button>
         </div>
       </div>
 
