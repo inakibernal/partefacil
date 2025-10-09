@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabase";
 import { generarPDFConsolidado, exportarAExcel } from '../utils/exportadores';
+import { PDFGenerator } from '../../../app/utils/pdfGenerator';
 
 interface PartesViewProps {
   directorId: string;
@@ -19,7 +20,7 @@ export default function PartesView({ directorId, residencias, trabajadores }: Pa
     trabajador_id: '',
     solo_incidencias: false
   });
-
+const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
   useEffect(() => {
     cargarPartes();
   }, []);
@@ -213,21 +214,70 @@ export default function PartesView({ directorId, residencias, trabajadores }: Pa
                     </div>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
+<div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={() => window.open(`/parte/${parte.id}`, '_blank')}
+                    onClick={() => setParteSeleccionado(parte)}
                     style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Ver Detalles
                   </button>
                   <button
-                    onClick={() => alert('Funcionalidad de PDF próximamente')}
+                    onClick={async () => {
+                      try {
+                        // Obtener parte completo con residentes
+                        const { data } = await supabase.rpc('obtener_parte_completo', {
+                          p_parte_id: parte.id
+                        });
+                        
+                        if (data) {
+                          // Transformar a formato esperado por PDFGenerator
+                          const parteParaPDF = {
+                            ...parte,
+                            residentes_detalle: (data.residentes || []).map((r: any) => ({
+                              nombre: r.residente_nombre?.split(' ')[0] || '',
+                              apellidos: r.residente_nombre?.split(' ').slice(1).join(' ') || '',
+                              dni: r.residente_dni,
+                              edad: 0, // Calcular si necesario
+                              datos_parte: {
+                                alimentacion_desayuno: r.comida_desayuno,
+                                alimentacion_comida: r.comida_almuerzo,
+                                alimentacion_cena: r.comida_cena,
+                                higiene_personal: r.higiene_observaciones,
+                                medicacion_administrada: r.medicacion_administrada ? 'completa' : 'no',
+                                medicacion_observaciones: r.medicacion_observaciones,
+                                estado_animico: r.estado_animo,
+                                actividades: r.actividades_realizadas,
+                                incidencias: r.descripcion_incidencia,
+                                observaciones_generales: r.observaciones_generales,
+                                movilidad: r.movilidad,
+                                sueno: r.sueno,
+                                hidratacion: r.hidratacion,
+                                estado_piel: r.estado_piel,
+                                control_esfinteres: r.control_esfinteres,
+                                cambios_posturales: r.cambios_posturales,
+                                temperatura: r.temperatura,
+                                tension_arterial: r.tension_arterial,
+                                glucemia: r.glucemia,
+                                visita_medico: r.visita_medico,
+                                visitas_familiares: r.visitas_familiares,
+                                estado_conciencia: r.estado_general
+                              }
+                            }))
+                          };
+                          
+                          PDFGenerator.generarParteDiario(parteParaPDF);
+                        }
+                      } catch (error) {
+                        console.error('Error generando PDF:', error);
+                        alert('Error al generar el PDF');
+                      }
+                    }}
                     style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     PDF
                   </button>
                 </div>
+
               </div>
             </div>
           ))}
@@ -237,6 +287,58 @@ export default function PartesView({ directorId, residencias, trabajadores }: Pa
       <div style={{ marginTop: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
         Total de partes: <strong>{partes.length}</strong>
       </div>
+{/* Modal Ver Detalles */}
+      {parteSeleccionado && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            padding: '30px',
+            maxWidth: '90%',
+            maxHeight: '90%',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0 }}>Parte del {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')}</h2>
+              <button
+                onClick={() => setParteSeleccionado(null)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '18px',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+              <p><strong>Residencia:</strong> {parteSeleccionado.residencia_nombre}</p>
+              <p><strong>Trabajador:</strong> {parteSeleccionado.trabajador_nombre}</p>
+              <p><strong>Fecha y hora:</strong> {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')} a las {parteSeleccionado.hora || 'Sin hora'}</p>
+              <p><strong>Total residentes:</strong> {parteSeleccionado.total_residentes}</p>
+              <p><strong>Con incidencias:</strong> {parteSeleccionado.residentes_con_incidencias}</p>
+            </div>
+
+            <p style={{ textAlign: 'center', color: '#666', fontSize: '14px' }}>
+              Detalles completos disponibles en el PDF consolidado
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
