@@ -504,7 +504,7 @@ const guardarFormulario = async () => {
   	          rol: formularioActivo,
       		  telefono: datosFormulario.telefono || '',
         	  empresas: datosFormulario.empresas_ids || [],
-        	  residencias: datosFormulario.residencia_id ? [datosFormulario.residencia_id] : [],
+                  residencias: datosFormulario.residencias_ids || [],        	
         	  fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
         	  direccion: datosFormulario.direccion || null,
         	  ciudad: datosFormulario.ciudad || null,
@@ -807,6 +807,26 @@ const guardarFormulario = async () => {
           {directores.map(director => (
             <option key={director.id} value={director.id}>
               {director.nombre} {director.apellidos} ({director.dni})
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (campo.tipo === 'select_residencias_multiple') {
+      return (
+        <select 
+          multiple
+          size={4}
+          value={datosFormulario.residencias_ids || []}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions, option => option.value);
+            setDatosFormulario({...datosFormulario, residencias_ids: selected});
+          }}
+          style={{ width: '100%', padding: '15px', fontSize: '18px', border: '2px solid #ddd', borderRadius: '8px' }}
+        >
+          {residencias.map(residencia => (
+            <option key={residencia.id} value={residencia.id}>
+              {residencia.nombre} - {residencia.poblacion || residencia.ciudad}
             </option>
           ))}
         </select>
@@ -1555,11 +1575,16 @@ const guardarFormulario = async () => {
       )}
 
       {/* Modal de Ficha Detallada */}
-      {fichaVisible && (
+	{fichaVisible && (
         <FichaModal
           elemento={fichaVisible.elemento}
           tipo={fichaVisible.tipo}
           onCerrar={() => setFichaVisible(null)}
+          residenciasDelDirector={
+            fichaVisible.tipo === 'director' 
+              ? residencias.filter(r => r.director_id === fichaVisible.elemento.id)
+              : undefined
+          }
         />
       )}
 	{modalCrearVisible && (

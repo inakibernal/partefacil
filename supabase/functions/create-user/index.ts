@@ -74,8 +74,17 @@ serve(async (req) => {
       
       if (errorEmpresas) throw errorEmpresas
     }
+// Asignar residencias al director (actualizar director_id en residencias)
+    if (rol === 'director' && residencias && residencias.length > 0) {
+      const { error: errorResidencias } = await supabaseAdmin
+        .from('residencias')
+        .update({ director_id: authData.user.id })
+        .in('id', residencias);
+      
+      if (errorResidencias) console.error('Error asignando residencias:', errorResidencias);
+    }
 
-if (rol === 'trabajador' && residencias && residencias.length > 0) {
+    if (rol === 'trabajador' && residencias && residencias.length > 0) {
       const { error: errorResidencias } = await supabaseAdmin
         .from('usuario_residencia')
         .insert(residencias.map(residencia_id => ({ 

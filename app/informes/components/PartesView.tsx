@@ -1,277 +1,242 @@
 "use client";
-import React, { useState } from "react";
-import { PDFGenerator } from "../../utils/pdfGenerator.js";
+import React, { useState, useEffect } from "react";
+import { supabase } from "../../../lib/supabase";
+import { generarPDFConsolidado, exportarAExcel } from '../utils/exportadores';
 
-export default function PartesView({
-  partesGuardados,
-  onVerFicha,
-}: {
-  partesGuardados: any[];
-  onVerFicha: (parte: any) => void;
-}) {
-  const [partesSeleccionados, setPartesSeleccionados] = useState(new Set());
+interface PartesViewProps {
+  directorId: string;
+  residencias: any[];
+  trabajadores: any[];
+}
+
+export default function PartesView({ directorId, residencias, trabajadores }: PartesViewProps) {
+  const [partes, setPartes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({
-    fechaDesde: '',
-    fechaHasta: '',
-    profesional: '',
-    residencia: ''
+    fecha_desde: '',
+    fecha_hasta: '',
+    residencia_id: '',
+    trabajador_id: '',
+    solo_incidencias: false
   });
 
-  const profesionalesUnicos = [...new Set(partesGuardados.map(p => p.trabajador_nombre || p.profesional).filter(Boolean))];
-  const residenciasUnicas = [...new Set(partesGuardados.map(p => p.residencia_nombre).filter(Boolean))];
+  useEffect(() => {
+    cargarPartes();
+  }, []);
 
-  const partesFiltrados = partesGuardados.filter(parte => {
-    const fechaParte = new Date(parte.fecha);
-    const cumpleFechaDesde = !filtros.fechaDesde || fechaParte >= new Date(filtros.fechaDesde);
-    const cumpleFechaHasta = !filtros.fechaHasta || fechaParte <= new Date(filtros.fechaHasta);
-    const cumpleProfesional = !filtros.profesional || 
-      (parte.trabajador_nombre || parte.profesional || '').toLowerCase().includes(filtros.profesional.toLowerCase());
-    const cumpleResidencia = !filtros.residencia || 
-      (parte.residencia_nombre || '').toLowerCase().includes(filtros.residencia.toLowerCase());
-    
-    return cumpleFechaDesde && cumpleFechaHasta && cumpleProfesional && cumpleResidencia;
-  });
-
-  const toggleSeleccion = (parteId) => {
-    const nuevaSeleccion = new Set(partesSeleccionados);
-    if (nuevaSeleccion.has(parteId)) {
-      nuevaSeleccion.delete(parteId);
-    } else {
-      nuevaSeleccion.add(parteId);
-    }
-    setPartesSeleccionados(nuevaSeleccion);
-  };
-
-  const seleccionarTodos = () => {
-    if (partesSeleccionados.size === partesFiltrados.length) {
-      setPartesSeleccionados(new Set());
-    } else {
-      setPartesSeleccionados(new Set(partesFiltrados.map(p => p.id || p.fecha + p.trabajador_dni)));
-    }
-  };
-
-  const exportarSeleccionados = () => {
-    if (partesSeleccionados.size === 0) {
-      alert('Selecciona al menos un parte para exportar');
-      return;
-    }
-    
-    const partesAExportar = partesFiltrados.filter(p => 
-      partesSeleccionados.has(p.id || p.fecha + p.trabajador_dni)
-    );
-    
+  const cargarPartes = async () => {
+    setLoading(true);
     try {
-      PDFGenerator.generarPartesMultiples(partesAExportar);
+      const { data } = await supabase.rpc('obtener_partes_director', {
+        p_director_id: directorId,
+        p_fecha_desde: filtros.fecha_desde || null,
+        p_fecha_hasta: filtros.fecha_hasta || null,
+        p_residencia_id: filtros.residencia_id || null,
+        p_trabajador_id: filtros.trabajador_id || null,
+        p_solo_incidencias: filtros.solo_incidencias
+      });
+
+      setPartes(data || []);
     } catch (error) {
-      console.error('Error al generar PDF:', error);
-      alert('Error al generar el PDF. Inténtalo de nuevo.');
+      console.error('Error cargando partes:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const exportarPDF = (parte) => {
-    try {
-      PDFGenerator.generarParteDiario(parte);
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
-      alert('Error al generar el PDF. Inténtalo de nuevo.');
-    }
+  const aplicarFiltros = () => {
+    cargarPartes();
   };
 
-  const estilos = {
-    container: { backgroundColor: "white", borderRadius: "8px", overflow: "hidden" },
-    filtros: { padding: "20px", backgroundColor: "#f8f9fa", borderBottom: "1px solid #dee2e6" },
-    input: { padding: "8px", border: "1px solid #ced4da", borderRadius: "4px", fontSize: "14px", width: "100%" },
-    button: { padding: "8px 16px", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "14px", fontWeight: "bold" },
-    buttonPrimary: { backgroundColor: "#007bff", color: "white" },
-    buttonSuccess: { backgroundColor: "#28a745", color: "white" },
-    buttonDanger: { backgroundColor: "#dc3545", color: "white" },
-    buttonInfo: { backgroundColor: "#17a2b8", color: "white" },
-    parte: { padding: "20px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: "15px" }
+  const limpiarFiltros = () => {
+    setFiltros({
+      fecha_desde: '',
+      fecha_hasta: '',
+      residencia_id: '',
+      trabajador_id: '',
+      solo_incidencias: false
+    });
+    setTimeout(() => cargarPartes(), 100);
   };
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2>Partes Diarios ({partesFiltrados.length})</h2>
-        
-        {partesFiltrados.length > 0 && (
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#666" }}>
-              {partesSeleccionados.size} seleccionados
-            </span>
-            <button 
-              onClick={seleccionarTodos}
-              style={{ ...estilos.button, ...estilos.buttonPrimary }}
-            >
-              {partesSeleccionados.size === partesFiltrados.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
-            </button>
-            <button 
-              onClick={exportarSeleccionados}
-              disabled={partesSeleccionados.size === 0}
-              style={{ 
-                ...estilos.button, 
-                ...estilos.buttonSuccess,
-                opacity: partesSeleccionados.size === 0 ? 0.5 : 1
-              }}
-            >
-              Exportar seleccionados ({partesSeleccionados.size})
-            </button>
-          </div>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h2 style={{ fontSize: '28px', color: '#2c3e50', margin: 0 }}>📋 Partes Diarios</h2>
       </div>
 
-      <div style={estilos.container}>
-        <div style={estilos.filtros}>
-          <h4 style={{ margin: "0 0 15px 0", color: "#495057" }}>Filtros para inspecciones</h4>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
-                Desde fecha:
-              </label>
-              <input 
-                type="date"
-                value={filtros.fechaDesde}
-                onChange={(e) => setFiltros(prev => ({ ...prev, fechaDesde: e.target.value }))}
-                style={estilos.input}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
-                Hasta fecha:
-              </label>
-              <input 
-                type="date"
-                value={filtros.fechaHasta}
-                onChange={(e) => setFiltros(prev => ({ ...prev, fechaHasta: e.target.value }))}
-                style={estilos.input}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
-                Profesional:
-              </label>
-              <select 
-                value={filtros.profesional}
-                onChange={(e) => setFiltros(prev => ({ ...prev, profesional: e.target.value }))}
-                style={estilos.input}
-              >
-                <option value="">Todos los profesionales</option>
-                {profesionalesUnicos.map(prof => (
-                  <option key={prof} value={prof}>{prof}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
-                Residencia:
-              </label>
-              <select 
-                value={filtros.residencia}
-                onChange={(e) => setFiltros(prev => ({ ...prev, residencia: e.target.value }))}
-                style={estilos.input}
-              >
-                <option value="">Todas las residencias</option>
-                {residenciasUnicas.map(res => (
-                  <option key={res} value={res}>{res}</option>
-                ))}
-              </select>
-            </div>
+      {/* Filtros */}
+      <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '25px' }}>
+        <h3 style={{ fontSize: '18px', color: '#2c3e50', marginBottom: '20px' }}>🔍 Filtros</h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Desde:</label>
+            <input
+              type="date"
+              value={filtros.fecha_desde}
+              onChange={(e) => setFiltros({...filtros, fecha_desde: e.target.value})}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            />
           </div>
-          
-          {(filtros.fechaDesde || filtros.fechaHasta || filtros.profesional || filtros.residencia) && (
-            <div style={{ marginTop: "15px" }}>
-              <button 
-                onClick={() => setFiltros({ fechaDesde: '', fechaHasta: '', profesional: '', residencia: '' })}
-                style={{ ...estilos.button, backgroundColor: "#6c757d", color: "white" }}
-              >
-                Limpiar filtros
-              </button>
-            </div>
-          )}
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Hasta:</label>
+            <input
+              type="date"
+              value={filtros.fecha_hasta}
+              onChange={(e) => setFiltros({...filtros, fecha_hasta: e.target.value})}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Residencia:</label>
+            <select
+              value={filtros.residencia_id}
+              onChange={(e) => setFiltros({...filtros, residencia_id: e.target.value})}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            >
+              <option value="">Todas las residencias</option>
+              {residencias.map(r => (
+                <option key={r.id} value={r.id}>{r.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Trabajador:</label>
+            <select
+              value={filtros.trabajador_id}
+              onChange={(e) => setFiltros({...filtros, trabajador_id: e.target.value})}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            >
+              <option value="">Todos los trabajadores</option>
+              {trabajadores.map(t => (
+                <option key={t.id} value={t.id}>{t.nombre} {t.apellidos}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {partesFiltrados.length === 0 ? (
-          <p style={{ padding: "40px", textAlign: "center", color: "#666" }}>
-            {partesGuardados.length === 0 ? "No hay partes disponibles" : "No se encontraron partes con los filtros aplicados"}
-          </p>
-        ) : (
-          partesFiltrados.map((parte: any, index: number) => {
-            const parteId = parte.id || parte.fecha + parte.trabajador_dni;
-            const estaSeleccionado = partesSeleccionados.has(parteId);
-            
-            return (
-              <div 
-                key={parteId} 
-                style={{
-                  ...estilos.parte,
-                  backgroundColor: estaSeleccionado ? "#e3f2fd" : "white"
-                }}
-              >
-                <input 
-                  type="checkbox"
-                  checked={estaSeleccionado}
-                  onChange={() => toggleSeleccion(parteId)}
-                  style={{ transform: "scale(1.2)" }}
-                />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={filtros.solo_incidencias}
+              onChange={(e) => setFiltros({...filtros, solo_incidencias: e.target.checked})}
+              style={{ marginRight: '8px', width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '14px' }}>Solo partes con incidencias</span>
+          </label>
+        </div>
 
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={aplicarFiltros}
+            style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
+          >
+            Aplicar Filtros
+          </button>
+          <button
+            onClick={limpiarFiltros}
+            style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
+          >
+            Limpiar
+          </button>
+          <button
+            onClick={() => generarPDFConsolidado(partes, filtros)}
+            disabled={partes.length === 0}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: partes.length > 0 ? '#dc3545' : '#ccc', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px', 
+              cursor: partes.length > 0 ? 'pointer' : 'not-allowed', 
+              fontSize: '14px' 
+            }}
+          >
+            📄 Generar PDF
+          </button>
+          <button
+            onClick={() => exportarAExcel(partes, filtros)}
+            disabled={partes.length === 0}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: partes.length > 0 ? '#28a745' : '#ccc', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px', 
+              cursor: partes.length > 0 ? 'pointer' : 'not-allowed', 
+              fontSize: '14px' 
+            }}
+          >
+            📊 Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      {/* Listado de partes */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px', backgroundColor: 'white', borderRadius: '10px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
+          <p style={{ color: '#666' }}>Cargando partes...</p>
+        </div>
+      ) : partes.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: '64px', marginBottom: '20px' }}>📋</div>
+          <h3 style={{ fontSize: '20px', color: '#666', marginBottom: '10px' }}>No hay partes</h3>
+          <p style={{ color: '#999' }}>No se encontraron partes con los filtros aplicados</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '15px' }}>
+          {partes.map(parte => (
+            <div key={parte.id} style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '10px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+              borderLeft: `4px solid ${parte.residentes_con_incidencias > 0 ? '#dc3545' : '#28a745'}`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "16px", color: "#333", marginBottom: "5px" }}>
-                    <strong>Fecha:</strong> {new Date(parte.fecha).toLocaleDateString('es-ES')} • 
-                    <strong> Profesional:</strong> {parte.trabajador_nombre || parte.profesional || 'No especificado'} • 
-                    <strong> Residencia:</strong> {parte.residencia_nombre || 'No especificada'}
-                  </div>
-                  <div style={{ fontSize: "14px", color: "#666" }}>
-                    {parte.total_residentes || 0} residentes • {parte.residentes_con_incidencias || 0} con incidencias
-                    {parte.hora && ` • Hora: ${parte.hora}`}
+                  <h3 style={{ fontSize: '18px', color: '#2c3e50', margin: '0 0 10px 0' }}>
+                    Parte del {new Date(parte.fecha).toLocaleDateString('es-ES')} - {parte.hora || 'Sin hora'}
+                  </h3>
+                  <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.8' }}>
+                    <div><strong>🏢 Residencia:</strong> {parte.residencia_nombre}</div>
+                    <div><strong>👤 Trabajador:</strong> {parte.trabajador_nombre}</div>
+                    <div><strong>👥 Total residentes:</strong> {parte.total_residentes}</div>
+                    <div style={{ color: parte.residentes_con_incidencias > 0 ? '#dc3545' : '#28a745', fontWeight: 'bold' }}>
+                      <strong>⚠️ Con incidencias:</strong> {parte.residentes_con_incidencias}
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button 
-                    onClick={() => onVerFicha(parte)} 
-                    style={{ ...estilos.button, ...estilos.buttonInfo }}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => window.open(`/parte/${parte.id}`, '_blank')}
+                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
-                    Ver
+                    Ver Detalles
                   </button>
-                  <button 
-                    onClick={() => exportarPDF(parte)}
-                    style={{ ...estilos.button, ...estilos.buttonDanger }}
+                  <button
+                    onClick={() => alert('Funcionalidad de PDF próximamente')}
+                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     PDF
                   </button>
                 </div>
               </div>
-            );
-          })
-        )}
-      </div>
-
-      {partesSeleccionados.size > 0 && (
-        <div style={{
-          marginTop: "20px",
-          padding: "15px",
-          backgroundColor: "#d4edda",
-          border: "1px solid #c3e6cb",
-          borderRadius: "8px",
-          color: "#155724"
-        }}>
-          <strong>Seleccionados para exportar:</strong> {partesSeleccionados.size} partes
-          <div style={{ marginTop: "10px" }}>
-            <button 
-              onClick={exportarSeleccionados}
-              style={{ ...estilos.button, ...estilos.buttonSuccess, marginRight: "10px" }}
-            >
-              Exportar todos los seleccionados
-            </button>
-            <button 
-              onClick={() => setPartesSeleccionados(new Set())}
-              style={{ ...estilos.button, backgroundColor: "#6c757d", color: "white" }}
-            >
-              Limpiar selección
-            </button>
-          </div>
+            </div>
+          ))}
         </div>
       )}
+
+      <div style={{ marginTop: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
+        Total de partes: <strong>{partes.length}</strong>
+      </div>
     </div>
   );
 }

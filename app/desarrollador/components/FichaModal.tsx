@@ -7,6 +7,7 @@ interface FichaModalProps {
   elemento: any;
   tipo: TipoElemento;
   onCerrar: () => void;
+  residenciasDelDirector?: any[]; // Nueva prop opcional
 }
 
 const colores = {
@@ -25,7 +26,7 @@ const calcularEdad = (fechaNacimiento: string) => {
   return age;
 };
 
-export default function FichaModal({ elemento, tipo, onCerrar }: FichaModalProps) {
+export default function FichaModal({ elemento, tipo, onCerrar, residenciasDelDirector }: FichaModalProps) {
 console.log('Elemento recibido:', elemento);
   return (
     <div style={{
@@ -53,7 +54,7 @@ console.log('Elemento recibido:', elemento);
 
         {/* Content */}
         <div style={{ padding: 24 }}>
-          {tipo === 'director' && <FichaDirector elemento={elemento} />}
+          {tipo === 'director' && <FichaDirector elemento={elemento} residencias={residenciasDelDirector || []} />}
           {tipo === 'trabajador' && <FichaTrabajador elemento={elemento} />}
           {tipo === 'residencia' && <FichaResidencia elemento={elemento} />}
           {tipo === 'residente' && <FichaResidente elemento={elemento} />}
@@ -64,7 +65,7 @@ console.log('Elemento recibido:', elemento);
 }
 
 // Componentes específicos por tipo
-function FichaDirector({ elemento }: { elemento: any }) {
+function FichaDirector({ elemento, residencias }: { elemento: any; residencias: any[] }) {
   return (
     <>
       <Seccion titulo="Información Personal">
@@ -85,6 +86,16 @@ function FichaDirector({ elemento }: { elemento: any }) {
         <Campo label="Título profesional" valor={elemento.titulo_profesional} />
         <Campo label="Años de experiencia" valor={elemento.experiencia} />
       </Seccion>
+
+      <Seccion titulo="Residencias Asignadas">
+        {/* TODO: Obtener residencias del director */}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <p style={{ margin: 0, color: '#666' }}>
+            Ver residencias en la pestaña correspondiente
+          </p>
+        </div>
+      </Seccion>
+
     </>
   );
 }
