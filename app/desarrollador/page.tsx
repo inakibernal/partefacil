@@ -1578,15 +1578,13 @@ const guardarFormulario = async () => {
               onEliminar={(r) => eliminarElemento(r, 'residente')}
             />
           )}
-
-          {vistaActual === 'papelera' && (
-            <PapeleraView
-              papelera={papelera}
-              onRestaurar={restaurarElemento}
-              onRecargarDatos={cargarTodosDatos}
+	{vistaActual === 'papelera' && (
+            <PapeleraView  
+              usuarioId={JSON.parse(localStorage.getItem('sesion_activa') || '{}').usuarioId || ''}
+              rol="superadmin"
+              onRecargar={cargarTodosDatos}
             />
           )}
-
         </div>
       )}
 

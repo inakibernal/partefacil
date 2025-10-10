@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { camposEstatales } from "./campos-legales.js";
 import { PDFGenerator } from "../utils/pdfGenerator.js";
 import { supabase } from '../../lib/supabase';
+import PapeleraView from '../desarrollador/components/PapeleraView';
 
 type Dict<T = any> = Record<string | number, T>;
 
@@ -26,7 +27,7 @@ const NuevoPartePage = () => {
   const [formulario, setFormulario] = useState({
     fecha: new Date().toISOString().split("T")[0],
     hora: new Date().toTimeString().slice(0, 5),
-    vista: "panel" as "panel" | "historial",
+    vista: "panel" as "panel" | "historial" | "papelera",
   });
 
   const [residentesData, setResidentesData] = useState<Dict<Dict>>({});
@@ -743,6 +744,34 @@ const renderFiltros = () => (
                   >
                     PDF
                   </button>
+		<button
+                    onClick={async () => {
+                      if (!confirm('¿Eliminar este parte? Se moverá a la papelera por 100 días.')) return;
+                      
+                      try {
+                        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+                        const { data } = await supabase.rpc('mover_a_papelera', {
+                          p_tipo_entidad: 'parte',
+                          p_entidad_id: parte.id,
+                          p_eliminado_por: sesion.usuarioId,
+                          p_eliminado_por_rol: 'trabajador'
+                        });
+                        
+                        if (data?.success) {
+                          alert('Parte movido a papelera. Solo el director puede restaurarlo.');
+                          inicializar(); // Recargar lista
+                        } else {
+                          alert('Error al eliminar parte');
+                        }
+                      } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al eliminar');
+                      }
+                    }}
+                    style={{ ...estilos.button, backgroundColor: "#6c757d", color: "white", fontSize: "14px", padding: "8px 12px" }}
+                  >
+                    🗑️ Eliminar
+                  </button>
                 </div>
               </div>
             ))}
@@ -752,7 +781,16 @@ const renderFiltros = () => (
     );
   };
 
-  // ----------------- RENDER: VISOR PARTE -----------------
+// ----------------- RENDER: PAPELERA -----------------
+  const renderPapelera = () => {
+    return <PapeleraView 
+      usuarioId={datos.sesion?.usuarioId || ''}
+      rol="trabajador"
+      onRecargar={inicializar}
+    />;
+  };
+
+// ----------------- RENDER: VISOR PARTE -----------------
   const renderVisorParte = () => {
     if (!parteSeleccionado) return null;
     return (
@@ -832,7 +870,7 @@ const renderFiltros = () => (
     );
   };
 
-  // ----------------- RENDER: PÁGINA -----------------
+// ----------------- RENDER: PÁGINA -----------------
   if (!datos.sesion) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -847,7 +885,7 @@ const renderFiltros = () => (
 
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #dee2e6" }}>
         <div style={estilos.container}>
-          {(["panel", "historial"] as const).map((vista) => (
+	   {(["panel", "historial", "papelera"] as const).map((vista) => (
             <button
               key={vista}
               onClick={() => setFormulario((prev) => ({ ...prev, vista }))}
@@ -859,19 +897,22 @@ const renderFiltros = () => (
                 cursor: "pointer",
               }}
             >
-              {vista === "panel" ? "Panel de Residentes" : "Mis Partes"}
+		{vista === "panel" ? "Panel de Residentes" : vista === "historial" ? "Mis Partes" : "Papelera"}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ ...estilos.container, padding: "20px" }}>
-        {formulario.vista === "panel" ? renderPanelResidentes() : renderHistorial()}
+	<div style={{ ...estilos.container, padding: "20px" }}>
+        {formulario.vista === "panel" ? renderPanelResidentes() : 
+         formulario.vista === "historial" ? renderHistorial() :
+         renderPapelera()}
       </div>
 
       {renderVisorParte()}
     </div>
   );
 };
+
 
 export default NuevoPartePage;

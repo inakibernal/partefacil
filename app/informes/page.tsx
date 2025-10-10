@@ -6,6 +6,7 @@ import TrabajadoresView from "../desarrollador/components/TrabajadoresView";
 import ResidentesView from "../desarrollador/components/ResidentesView";
 import FichaModal from "../desarrollador/components/FichaModal";
 import PartesView from "./components/PartesView";
+import PapeleraView from '../desarrollador/components/PapeleraView';
 
 export default function PanelDirector() {
   const [loading, setLoading] = useState(true);
@@ -297,18 +298,16 @@ export default function PanelDirector() {
           />
         )}
 
-        {vistaActual === 'papelera' && (
-          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ fontSize: '22px', color: '#2c3e50', marginBottom: '20px' }}>🗑️ Papelera</h2>
-            <div style={{ textAlign: 'center', padding: '60px', color: '#999' }}>
-              <div style={{ fontSize: '64px', marginBottom: '20px' }}>🗑️</div>
-              <h3 style={{ fontSize: '20px', marginBottom: '10px' }}>Papelera vacía</h3>
-              <p>Los elementos eliminados aparecerán aquí</p>
-            </div>
-          </div>
+	{vistaActual === 'papelera' && directorId && (
+          <PapeleraView
+            usuarioId={directorId}
+            rol="director"
+            onRecargar={() => directorId && cargarTodosDatos(directorId)}
+          />
         )}
-      </div>
-{fichaVisible && (
+          </div>
+
+	{fichaVisible && (
         <FichaModal
           elemento={fichaVisible.elemento}
           tipo={fichaVisible.tipo}

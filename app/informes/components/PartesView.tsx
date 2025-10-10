@@ -23,7 +23,7 @@ export default function PartesView({ directorId, residencias, trabajadores }: Pa
 const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
   useEffect(() => {
     cargarPartes();
-  }, []);
+}, [filtros]);
 
   const cargarPartes = async () => {
     setLoading(true);
@@ -224,20 +224,18 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
                   <button
                     onClick={async () => {
                       try {
-                        // Obtener parte completo con residentes
                         const { data } = await supabase.rpc('obtener_parte_completo', {
                           p_parte_id: parte.id
                         });
                         
                         if (data) {
-                          // Transformar a formato esperado por PDFGenerator
                           const parteParaPDF = {
                             ...parte,
                             residentes_detalle: (data.residentes || []).map((r: any) => ({
                               nombre: r.residente_nombre?.split(' ')[0] || '',
                               apellidos: r.residente_nombre?.split(' ').slice(1).join(' ') || '',
                               dni: r.residente_dni,
-                              edad: 0, // Calcular si necesario
+                              edad: 0,
                               datos_parte: {
                                 alimentacion_desayuno: r.comida_desayuno,
                                 alimentacion_comida: r.comida_almuerzo,
@@ -275,6 +273,45 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
                     style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     PDF
+                  </button>
+		<button
+                    onClick={async (e) => {
+                      e.currentTarget.disabled = true;
+                      e.currentTarget.textContent = '⏳ Eliminando...';
+                      
+                      if (!confirm('¿Eliminar este parte? Se moverá a la papelera por 100 días.')) {
+                        e.currentTarget.disabled = false;
+                        e.currentTarget.textContent = '🗑️ Eliminar';
+                        return;
+                      }
+                      
+                      try {
+                        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+                        const { data } = await supabase.rpc('mover_a_papelera', {
+                          p_tipo_entidad: 'parte',
+                          p_entidad_id: parte.id,
+                          p_eliminado_por: sesion.usuarioId,
+                          p_eliminado_por_rol: 'director'
+                        });
+                        
+                        if (data?.success) {
+                          alert('Parte movido a papelera');
+                          cargarPartes();
+                        } else {
+                          alert('Error al eliminar parte');
+                          e.currentTarget.disabled = false;
+                          e.currentTarget.textContent = '🗑️ Eliminar';
+                        }
+                      } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al eliminar');
+                        e.currentTarget.disabled = false;
+                        e.currentTarget.textContent = '🗑️ Eliminar';
+                      }
+                    }}
+                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                  >
+                    🗑️ Eliminar
                   </button>
                 </div>
 
