@@ -6,9 +6,6 @@ export default function CondicionesPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             Condiciones del Servicio
           </h1>
-          <p className="text-xl text-gray-600">
-            Última actualización: 15 de septiembre de 2025
-          </p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 space-y-8">
@@ -86,8 +83,8 @@ export default function CondicionesPage() {
                 de su suscripción inicial.
               </p>
               <p>
-                <strong>6.3 Cancelación:</strong> Puede cancelar su suscripción en cualquier momento. 
-                No se proporcionan reembolsos por períodos parciales.
+                <strong>6.3 Cancelación:</strong> Puede cancelar su suscripción hasta 30 días antes de la finalización de la permanencia. 
+                 No se proporcionan reembolsos por períodos parciales.
               </p>
             </div>
           </section>
@@ -125,8 +122,9 @@ export default function CondicionesPage() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Terminación</h2>
             <p className="text-gray-700 leading-relaxed">
-              Podemos suspender o terminar su acceso al servicio si viola estos términos. Usted puede 
-              terminar su cuenta en cualquier momento contactándonos.
+              Podemos suspender o terminar su acceso al servicio si viola estos términos.
+              Usted puede terminar su cuenta en cualquier momento contactándonos hasta 30 días antes de la finalización de la permanencia.
+
             </p>
           </section>
 
@@ -153,9 +151,9 @@ export default function CondicionesPage() {
             </p>
             <div className="bg-gray-50 rounded-lg p-4 mt-4">
               <p className="text-gray-700">
-                <strong>Email:</strong> legal@partefacil.com<br/>
-                <strong>Teléfono:</strong> +34 900 123 456<br/>
-                <strong>Dirección:</strong> Calle Principal 123, 28001 Madrid, España
+                <strong>Email:</strong> info@partefacil.com<br/>
+                <strong>Teléfono:</strong> +34 611 842 052<br/>
+                <strong>Dirección:</strong> Calle Nogalina 32, 37254 Mieza, España
               </p>
             </div>
           </section>

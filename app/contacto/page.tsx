@@ -190,8 +190,8 @@ export default function ContactoPage() {
                   <div className="text-2xl mr-4">📞</div>
                   <div>
                     <div className="font-semibold text-gray-900">Teléfono</div>
-                    <div className="text-gray-600">+34 900 123 456</div>
-                    <div className="text-sm text-gray-500">Lun-Vie 9:00-18:00</div>
+                    <div className="text-gray-600">+34 611 842 052</div>
+                    <div className="text-sm text-gray-500">Lun-Jue 9:00-18:00</div>
                   </div>
                 </div>
 
@@ -199,8 +199,8 @@ export default function ContactoPage() {
                   <div className="text-2xl mr-4">📍</div>
                   <div>
                     <div className="font-semibold text-gray-900">Oficina</div>
-                    <div className="text-gray-600">Calle Principal 123</div>
-                    <div className="text-gray-600">28001 Madrid, España</div>
+                    <div className="text-gray-600">Calle Nogalina 32</div>
+                    <div className="text-gray-600">37254 Mieza, España</div>
                   </div>
                 </div>
               </div>
@@ -212,15 +212,15 @@ export default function ContactoPage() {
               
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-700">Lunes - Viernes</span>
+                  <span className="text-gray-700">Lunes - Jueves</span>
                   <span className="font-semibold text-gray-900">9:00 - 18:00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700">Sábados</span>
-                  <span className="font-semibold text-gray-900">10:00 - 14:00</span>
+                  <span className="text-gray-700">Viernes</span>
+                  <span className="font-semibold text-gray-900">9:00 - 15:00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700">Domingos</span>
+                  <span className="text-gray-700">Sabados y Domingos</span>
                   <span className="text-gray-500">Cerrado</span>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function ContactoPage() {
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <div className="text-sm text-blue-800">
                   <strong>Soporte urgente:</strong> Para incidencias críticas fuera del horario comercial, 
-                  envía un email a soporte@partefacil.com y te contactaremos lo antes posible.
+                  envía un email a info@partefacil.com y te contactaremos lo antes posible.
                 </div>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function ContactoPage() {
               <div className="space-y-4">
                 <div>
                   <div className="font-semibold text-gray-700 text-sm">¿Hay período de prueba?</div>
-                  <div className="text-gray-600 text-sm">Sí, 30 días gratuitos sin tarjeta de crédito.</div>
+                  <div className="text-gray-600 text-sm">No.</div>
                 </div>
                 
                 <div>

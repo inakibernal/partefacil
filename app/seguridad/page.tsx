@@ -154,39 +154,6 @@ export default function SeguridadPage() {
           </div>
         </div>
 
-        {/* Compromiso de Transparencia */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl text-white p-8 md:p-12 mb-12">
-          <h3 className="text-2xl font-semibold mb-6 text-center">
-            Nuestro Compromiso de Transparencia
-          </h3>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h4 className="font-semibold mb-4">Informes de Seguridad</h4>
-              <p className="text-blue-100 mb-4">
-                Publicamos informes trimestrales sobre el estado de seguridad de nuestra plataforma.
-              </p>
-              <ul className="text-blue-100 space-y-2">
-                <li>• Auditorías externas regulares</li>
-                <li>• Tests de penetración</li>
-                <li>• Evaluaciones de vulnerabilidades</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Comunicación de Incidentes</h4>
-              <p className="text-blue-100 mb-4">
-                En caso de cualquier incidente, nos comprometemos a comunicarlo en máximo 72 horas.
-              </p>
-              <ul className="text-blue-100 space-y-2">
-                <li>• Notificación inmediata</li>
-                <li>• Plan de acción detallado</li>
-                <li>• Seguimiento hasta resolución</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         {/* Mejores Prácticas */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">

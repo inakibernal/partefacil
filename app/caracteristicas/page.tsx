@@ -20,7 +20,7 @@ export default function CaracteristicasPage() {
               Crea partes diarios en menos de 2 minutos. Formulario intuitivo con campos optimizados para residencias de mayores.
             </p>
             <ul className="text-sm text-gray-500 space-y-1">
-              <li>• Campos personalizables</li>
+              <li>• Campos que marca la normativa oficial</li>
               <li>• Autocompletado inteligente</li>
               <li>• Guardado automático</li>
             </ul>
@@ -63,7 +63,6 @@ export default function CaracteristicasPage() {
             </p>
             <ul className="text-sm text-gray-500 space-y-1">
               <li>• Estadísticas automáticas</li>
-              <li>• Gráficos intuitivos</li>
               <li>• Exportación a PDF</li>
             </ul>
           </div>
@@ -138,7 +137,7 @@ export default function CaracteristicasPage() {
                   <span className="text-green-500 text-xl mr-3">✓</span>
                   <div>
                     <div className="font-semibold">Menos papeleo, más tiempo para residentes</div>
-                    <div className="text-gray-600 text-sm">Partes diarios en 2 minutos en lugar de 15-20 minutos</div>
+                    <div className="text-gray-600 text-sm">Partes diarios en 2 minutos en lugar de 30-35 minutos</div>
                   </div>
                 </li>
                 <li className="flex items-start">
@@ -170,7 +169,7 @@ export default function CaracteristicasPage() {
             <div className="bg-white rounded-2xl p-6 border-l-4 border-red-400">
               <h3 className="font-semibold text-red-600 mb-4 text-lg">❌ Método tradicional (papel)</h3>
               <ul className="space-y-3 text-gray-700">
-                <li>• 15-20 minutos por parte diario</li>
+                <li>• 30-35 minutos por parte diario</li>
                 <li>• Riesgo de pérdida de documentos</li>
                 <li>• Dificultad para encontrar información</li>
                 <li>• Preparación manual para inspecciones</li>
