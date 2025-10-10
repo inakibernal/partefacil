@@ -413,7 +413,7 @@ const partes = partesJSON || [];
   );
 
   // ----------------- RENDER: FILTROS HISTORIAL -----------------
-  const renderFiltros = () => (
+const renderFiltros = () => (
     <div style={{ ...estilos.card, marginBottom: "20px" }}>
       <h3 style={{ margin: "0 0 15px 0" }}>Filtros</h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
@@ -456,6 +456,57 @@ const partes = partesJSON || [];
             style={estilos.input}
           />
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
+        <button
+          onClick={async () => {
+            try {
+              const { generarPDFConsolidado } = await import('../informes/utils/exportadores');
+              await generarPDFConsolidado(partesFiltrados, filtros);
+            } catch (error) {
+              console.error('Error generando PDF:', error);
+              alert('Error al generar el PDF consolidado');
+            }
+          }}
+          disabled={partesFiltrados.length === 0}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: partesFiltrados.length > 0 ? '#dc3545' : '#ccc',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: partesFiltrados.length > 0 ? 'pointer' : 'not-allowed',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          📄 Exportar PDF Consolidado
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              const { exportarAExcel } = await import('../informes/utils/exportadores');
+              await exportarAExcel(partesFiltrados, filtros);
+            } catch (error) {
+              console.error('Error exportando Excel:', error);
+              alert('Error al exportar a Excel');
+            }
+          }}
+          disabled={partesFiltrados.length === 0}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: partesFiltrados.length > 0 ? '#28a745' : '#ccc',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: partesFiltrados.length > 0 ? 'pointer' : 'not-allowed',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          📊 Exportar a Excel
+        </button>
       </div>
     </div>
   );
