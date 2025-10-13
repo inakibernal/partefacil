@@ -441,11 +441,12 @@ personal.forEach((trabajador: any) => {
       setPasoActual(pasoActual - 1);
     }
   };
+
 const guardarFormulario = async () => {
 // Si está editando director o trabajador, usar función RPC de actualización
     if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && editandoElemento) {
       try {
-        const { error } = await supabase.rpc('actualizar_usuario', {
+        const { data, error } = await supabase.rpc('actualizar_usuario', {
           p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_apellidos: datosFormulario.apellidos,
@@ -464,8 +465,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert(`${formularioActivo === 'director' ? 'Director' : 'Trabajador'} actualizado correctamente`);
+        alert(`✅ ${formularioActivo === 'director' ? 'Director' : 'Trabajador'} actualizado correctamente`);
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -473,32 +479,34 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al actualizar');
+        console.error('Error:', error);
+        alert('❌ Error al actualizar');
         return;
       }
     }
+
     if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && !editandoElemento) {
       try {
-	const payload = {
-        	  email: datosFormulario.email,
-  	      	  password: datosFormulario.contrasena,
-  	          nombre: datosFormulario.nombre,
-  	          apellidos: datosFormulario.apellidos,
-  	          dni: datosFormulario.dni,
-  	          rol: formularioActivo,
-      		  telefono: datosFormulario.telefono || '',
-        	  empresas: datosFormulario.empresas_ids || [],
-                  residencias: datosFormulario.residencias_ids || [],        	
-        	  fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
-        	  direccion: datosFormulario.direccion || null,
-        	  ciudad: datosFormulario.ciudad || null,
-        	  codigo_postal: datosFormulario.codigo_postal || null,
-        	  titulo_profesional: datosFormulario.titulo_profesional || null,
-        	  experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
-        	  titulacion: datosFormulario.titulacion || null,
-        	  numero_colegiado: datosFormulario.numero_colegiado || null,
-	          turno: datosFormulario.turno || null,
-        	  fecha_inicio: datosFormulario.fecha_inicio || null
+        const payload = {
+          email: datosFormulario.email,
+          password: datosFormulario.contrasena,
+          nombre: datosFormulario.nombre,
+          apellidos: datosFormulario.apellidos,
+          dni: datosFormulario.dni,
+          rol: formularioActivo,
+          telefono: datosFormulario.telefono || '',
+          empresas: datosFormulario.empresas_ids || [],
+          residencias: datosFormulario.residencias_ids || [],        	
+          fecha_nacimiento: datosFormulario.fecha_nacimiento || null,
+          direccion: datosFormulario.direccion || null,
+          ciudad: datosFormulario.ciudad || null,
+          codigo_postal: datosFormulario.codigo_postal || null,
+          titulo_profesional: datosFormulario.titulo_profesional || null,
+          experiencia: datosFormulario.experiencia ? parseInt(datosFormulario.experiencia) : null,
+          titulacion: datosFormulario.titulacion || null,
+          numero_colegiado: datosFormulario.numero_colegiado || null,
+          turno: datosFormulario.turno || null,
+          fecha_inicio: datosFormulario.fecha_inicio || null
         };
         const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/create-user', {
           method: 'POST',
@@ -506,16 +514,27 @@ const guardarFormulario = async () => {
           body: JSON.stringify(payload)
         });
         const data = await response.json();
-        if (!data.success) { alert(`Error al crear ${formularioActivo}: ${data.error}`); return; }
-        alert(`${formularioActivo === 'director' ? 'Director' : 'Trabajador'} creado correctamente`);
-        setFormularioActivo(false); setPasoActual(0); setDatosFormulario({}); setEditandoElemento(null); cargarTodosDatos(); return;
-      } catch (error) { alert('Error de conexión'); return; }
+        if (!data.success) { 
+          alert(`❌ Error: ${data.error}`); 
+          return; 
+        }
+        alert(`✅ ${formularioActivo === 'director' ? 'Director' : 'Trabajador'} creado correctamente`);
+        setFormularioActivo(false); 
+        setPasoActual(0); 
+        setDatosFormulario({}); 
+        setEditandoElemento(null); 
+        cargarTodosDatos(); 
+        return;
+      } catch (error) { 
+        alert('❌ Error de conexión'); 
+        return; 
+      }
     }
 
 // Si es residencia nueva (no edición), usar RPC
     if (formularioActivo === 'residencia' && !editandoElemento) {
       try {
-        const { error } = await supabase.rpc('crear_residencia', {
+        const { data, error } = await supabase.rpc('crear_residencia', {
           p_nombre: datosFormulario.nombre,
           p_direccion: datosFormulario.direccion,
           p_codigo_postal: datosFormulario.codigo_postal,
@@ -533,8 +552,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Residencia creada correctamente');
+        alert('✅ Residencia creada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -542,14 +566,15 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al crear residencia');
+        console.error('Error:', error);
+        alert('❌ Error al crear residencia');
         return;
       }
     }
 // Si está editando residencia, usar RPC de actualización
     if (formularioActivo === 'residencia' && editandoElemento) {
       try {
-        const { error } = await supabase.rpc('actualizar_residencia', {
+        const { data, error } = await supabase.rpc('actualizar_residencia', {
           p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_direccion: datosFormulario.direccion,
@@ -567,8 +592,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Residencia actualizada correctamente');
+        alert('✅ Residencia actualizada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -576,14 +606,16 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al actualizar residencia');
+        console.error('Error:', error);
+        alert('❌ Error al actualizar residencia');
         return;
       }
     }
+
 // Si es empresa nueva, usar RPC
     if (formularioActivo === 'empresa' && !editandoElemento) {
       try {
-        const { error } = await supabase.rpc('crear_empresa', {
+        const { data, error } = await supabase.rpc('crear_empresa', {
           p_nombre: datosFormulario.nombre,
           p_cif: datosFormulario.cif,
           p_email_facturacion: datosFormulario.email_facturacion,
@@ -602,8 +634,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Empresa creada correctamente');
+        alert('✅ Empresa creada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -611,7 +648,8 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al crear empresa');
+        console.error('Error:', error);
+        alert('❌ Error al crear empresa');
         return;
       }
     }
@@ -619,7 +657,7 @@ const guardarFormulario = async () => {
     // Si está editando empresa, usar RPC de actualización
     if (formularioActivo === 'empresa' && editandoElemento) {
       try {
-        const { error } = await supabase.rpc('actualizar_empresa', {
+        const { data, error } = await supabase.rpc('actualizar_empresa', {
           p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_cif: datosFormulario.cif,
@@ -639,8 +677,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Empresa actualizada correctamente');
+        alert('✅ Empresa actualizada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -648,14 +691,16 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al actualizar empresa');
+        console.error('Error:', error);
+        alert('❌ Error al actualizar empresa');
         return;
       }
     }
+
 // Si es residente nuevo, usar RPC
     if (formularioActivo === 'residente' && !editandoElemento) {
       try {
-        const { error } = await supabase.rpc('crear_residente', {
+        const { data, error } = await supabase.rpc('crear_residente', {
           p_nombre: datosFormulario.nombre,
           p_apellidos: datosFormulario.apellidos,
           p_dni: datosFormulario.dni,
@@ -674,8 +719,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Residente creado correctamente');
+        alert('✅ Residente creado correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -683,15 +733,16 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al crear residente');
+        console.error('Error:', error);
+        alert('❌ Error al crear residente');
         return;
       }
-    }
+    };
 
     // Si está editando residente, usar RPC de actualización
     if (formularioActivo === 'residente' && editandoElemento) {
       try {
-        const { error } = await supabase.rpc('actualizar_residente', {
+        const { data, error } = await supabase.rpc('actualizar_residente', {
           p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_apellidos: datosFormulario.apellidos,
@@ -711,8 +762,13 @@ const guardarFormulario = async () => {
         });
 
         if (error) throw error;
+        
+        if (data && !data.success) {
+          alert(`❌ ${data.error}`);
+          return;
+        }
 
-        alert('Residente actualizado correctamente');
+        alert('✅ Residente actualizado correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -720,16 +776,11 @@ const guardarFormulario = async () => {
         cargarTodosDatos();
         return;
       } catch (error) {
-        alert('Error al actualizar residente');
+        console.error('Error:', error);
+        alert('❌ Error al actualizar residente');
         return;
       }
     }
-
-    const elementoConId = { ...datosFormulario, id: editandoElemento ? editandoElemento.id : Date.now(), fecha_creacion: editandoElemento ? editandoElemento.fecha_creacion : new Date().toISOString(), fecha_modificacion: new Date().toISOString(), estado: 'activo', creado_por: 'Desarrollador' };
-    if (elementoConId.confirmar_contrasena) delete elementoConId.confirmar_contrasena;
-    if ((formularioActivo === 'residencia' || formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) elementoConId.residencia_id = parseInt(elementoConId.residencia_id);
-    if (formularioActivo === 'residencia' && elementoConId.director_id) elementoConId.director_id = parseInt(elementoConId.director_id);
-alert(`${tipos[formularioActivo] || 'Elemento'} ${editandoElemento ? 'actualizado' : 'creado'} correctamente`);
   };
 
 const eliminarElemento = async (elemento: any, tipo: string) => {
