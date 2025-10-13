@@ -128,9 +128,12 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
 
   return (
     <div>
-      <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
-        <strong>ℹ️ Información:</strong> Los elementos permanecen en la papelera durante 100 días antes de ser eliminados automáticamente.
-      </div>
+	<div style={{ backgroundColor: '#d1ecf1', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bee5eb' }}>
+            <strong>ℹ️ Información:</strong> 
+            {rol === 'superadmin' && ' Puedes eliminar elementos manualmente cuando lo consideres necesario.'}
+            {rol === 'director' && ' Los elementos permanecen en la papelera durante 5 años (1825 días) antes de ser eliminados automáticamente.'}
+            {rol === 'trabajador' && ' Los elementos permanecen en la papelera durante 100 días antes de ser eliminados automáticamente.'}
+          </div>
 
       <div style={{ display: 'grid', gap: '15px' }}>
         {elementos.map((elemento) => (
@@ -159,54 +162,48 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                {(rol === 'superadmin' || rol === 'director' || (rol === 'trabajador' && elemento.puede_restaurar)) && elemento.puede_restaurar && (
+<div style={{ display: 'flex', gap: '10px' }}>
+                {/* Botón Restaurar - solo si puede_restaurar es true */}
+                {elemento.puede_restaurar && (
                   <button
                     onClick={() => restaurar(elemento)}
                     style={{
                       padding: '8px 16px',
-                      fontSize: '14px',
                       backgroundColor: '#28a745',
                       color: 'white',
                       border: 'none',
                       borderRadius: '5px',
                       cursor: 'pointer',
-                      fontWeight: 'bold'
+                      fontSize: '14px'
                     }}
                   >
-                    ♻️ Restaurar
+                    ↩️ Restaurar
                   </button>
                 )}
-
+                
+                {/* Botón Eliminar Definitivo - solo superadmin */}
                 {rol === 'superadmin' && (
                   <button
                     onClick={() => eliminarDefinitivo(elemento)}
                     style={{
                       padding: '8px 16px',
-                      fontSize: '14px',
                       backgroundColor: '#dc3545',
                       color: 'white',
                       border: 'none',
                       borderRadius: '5px',
                       cursor: 'pointer',
-                      fontWeight: 'bold'
+                      fontSize: '14px'
                     }}
                   >
                     🗑️ Eliminar Definitivo
                   </button>
                 )}
-
-                {!elemento.puede_restaurar && rol === 'trabajador' && (
-                  <div style={{ 
-                    padding: '8px 16px', 
-                    fontSize: '12px', 
-                    backgroundColor: '#f8f9fa', 
-                    color: '#666', 
-                    borderRadius: '5px',
-                    textAlign: 'center'
-                  }}>
-                    Solo el director puede restaurar
-                  </div>
+                
+                {/* Si no puede hacer nada, mostrar mensaje */}
+                {!elemento.puede_restaurar && rol !== 'superadmin' && (
+                  <span style={{ color: '#999', fontSize: '14px', fontStyle: 'italic' }}>
+                    Solo visible
+                  </span>
                 )}
               </div>
             </div>

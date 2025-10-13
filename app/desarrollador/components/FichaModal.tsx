@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-type TipoElemento = "director" | "residencia" | "trabajador" | "residente";
+type TipoElemento = "director" | "residencia" | "trabajador" | "residente" | "empresa";
 
 interface FichaModalProps {
   elemento: any;
@@ -14,7 +14,8 @@ const colores = {
   director: '#2c3e50',
   residencia: '#007bff',
   trabajador: '#28a745',
-  residente: '#6f42c1'
+  residente: '#6f42c1',
+  empresa: '#17a2b8'
 };
 
 const calcularEdad = (fechaNacimiento: string) => {
@@ -58,6 +59,7 @@ console.log('Elemento recibido:', elemento);
           {tipo === 'trabajador' && <FichaTrabajador elemento={elemento} />}
           {tipo === 'residencia' && <FichaResidencia elemento={elemento} />}
           {tipo === 'residente' && <FichaResidente elemento={elemento} />}
+	  {tipo === 'empresa' && <FichaEmpresa elemento={elemento} />}
         </div>
       </div>
     </div>
@@ -207,6 +209,43 @@ function FichaResidente({ elemento }: { elemento: any }) {
         <div style={{ marginTop: 16, padding: 12, background: '#fff3cd', borderRadius: 8, border: '1px solid #ffc107' }}>
           <strong style={{ display: 'block', marginBottom: 8, color: '#856404' }}>Observaciones Médicas:</strong>
           <p style={{ margin: 0, color: '#856404' }}>{elemento.observaciones_medicas}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function FichaEmpresa({ elemento }: { elemento: any }) {
+  return (
+    <>
+      <Seccion titulo="Información de la Empresa">
+        <Campo label="CIF" valor={elemento.cif} />
+        <Campo label="Email facturación" valor={elemento.email_facturacion} />
+        <Campo label="Teléfono" valor={elemento.telefono} />
+        <Campo label="Ciudad" valor={elemento.ciudad} />
+        <Campo label="Código postal" valor={elemento.codigo_postal} />
+        <Campo label="Dirección" valor={elemento.direccion} span />
+      </Seccion>
+
+      {(elemento.contacto_nombre || elemento.contacto_telefono) && (
+        <Seccion titulo="Contacto">
+          <Campo label="Nombre" valor={elemento.contacto_nombre} />
+          <Campo label="Teléfono" valor={elemento.contacto_telefono} />
+        </Seccion>
+      )}
+
+      <Seccion titulo="Información de Facturación">
+        <Campo label="Forma de pago" valor={elemento.forma_pago || 'transferencia'} />
+        <Campo label="Días vencimiento" valor={`${elemento.dias_vencimiento || '30'} días`} />
+        {elemento.dia_facturacion && <Campo label="Día facturación" valor={`Día ${elemento.dia_facturacion}`} />}
+        {elemento.descuento_porcentaje > 0 && <Campo label="Descuento" valor={`${elemento.descuento_porcentaje}%`} />}
+        {elemento.iban && <Campo label="IBAN" valor={elemento.iban} span />}
+      </Seccion>
+
+      {elemento.notas && (
+        <div style={{ marginTop: 16, padding: 12, background: '#f8f9fa', borderRadius: 8 }}>
+          <strong style={{ display: 'block', marginBottom: 8 }}>📋 Notas:</strong>
+          <p style={{ margin: 0, color: '#666' }}>{elemento.notas}</p>
         </div>
       )}
     </>

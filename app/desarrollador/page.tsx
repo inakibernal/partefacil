@@ -37,7 +37,7 @@ const PanelDesarrollador = () => {
   const [sugerencias, setSugerencias] = useState([]);
   const [indiceSugerencia, setIndiceSugerencia] = useState(-1);
 
-  useEffect(() => {
+useEffect(() => {
     setIsClient(true);
     inicializarSistema();
     cargarTodosDatos();
@@ -49,47 +49,31 @@ const cargarTodosDatos = async () => {
       // Cargar usuarios (directores, trabajadores) desde Supabase
       const { data: usuariosData } = await supabase.rpc('obtener_todos_usuarios_admin');
       const usuarios = usuariosData || [];
-      
+
       // Separar por rol
       const directoresData = usuarios.filter(u => u.rol === 'director');
       const personalData = usuarios.filter(u => u.rol === 'trabajador');
-      
+  
       // Cargar residencias desde Supabase
       const { data: residenciasData } = await supabase.rpc('obtener_residencias_admin');
-
+  
       // Cargar empresas desde Supabase
       const { data: empresasData2 } = await supabase.rpc('obtener_empresas_admin');
       setEmpresas(empresasData2 || []);
-      
+  
       // Cargar residentes desde Supabase
       const { data: residentesData } = await supabase.rpc('obtener_residentes_admin');
-
+  
       // Cargar empresas para selector
       const { data: empresasData } = await supabase.rpc('obtener_empresas_disponibles');
       setEmpresasDisponibles(empresasData2 || []);
-      
-      // Papelera sigue en localStorage por ahora
-      const papeleraData = SistemaPapelera.obtenerPapelera();
-      
-      setDirectores(directoresData);
+
+      setDirectores(directoresData);  
       setResidencias(residenciasData || []);
       setPersonal(personalData);
       setResidentes(residentesData || []);
-      setPapelera(papeleraData);
     } catch (error) {
       console.error('Error cargando datos:', error);
-      // Fallback a localStorage si falla
-      const directoresData = JSON.parse(localStorage.getItem('directores_sistema') || '[]');
-      const residenciasData = JSON.parse(localStorage.getItem('residencias_sistema') || '[]');
-      const personalData = JSON.parse(localStorage.getItem('personal_data') || '[]');
-      const residentesData = JSON.parse(localStorage.getItem('residentes_data') || '[]');
-      const papeleraData = SistemaPapelera.obtenerPapelera();
-      
-      setDirectores(directoresData);
-      setResidencias(residenciasData);
-      setPersonal(personalData);
-      setResidentes(residentesData);
-      setPapelera(papeleraData);
     }
   }
 };
@@ -745,44 +729,60 @@ const guardarFormulario = async () => {
     if (elementoConId.confirmar_contrasena) delete elementoConId.confirmar_contrasena;
     if ((formularioActivo === 'residencia' || formularioActivo === 'trabajador' || formularioActivo === 'residente') && elementoConId.residencia_id) elementoConId.residencia_id = parseInt(elementoConId.residencia_id);
     if (formularioActivo === 'residencia' && elementoConId.director_id) elementoConId.director_id = parseInt(elementoConId.director_id);
-    const claves = { director: 'directores_sistema', residencia: 'residencias_sistema', trabajador: 'personal_data', residente: 'residentes_data' };
-    const entidadesActuales = JSON.parse(localStorage.getItem(claves[formularioActivo]) || '[]');
-    let entidadesActualizadas = editandoElemento ? entidadesActuales.map(e => e.id === editandoElemento.id ? elementoConId : e) : [...entidadesActuales, elementoConId];
-    localStorage.setItem(claves[formularioActivo], JSON.stringify(entidadesActualizadas));
-    setFormularioActivo(false); setPasoActual(0); setDatosFormulario({}); setEditandoElemento(null); cargarTodosDatos();
-    if (mostrandoResultados && busqueda) setTimeout(() => setResultadosBusqueda(buscarGlobal(busqueda)), 100);
-    const tipos = { director: 'Director', residencia: 'Residencia', trabajador: 'Trabajador', residente: 'Residente' };
-    alert(`${tipos[formularioActivo] || 'Elemento'} ${editandoElemento ? 'actualizado' : 'creado'} correctamente`);
+alert(`${tipos[formularioActivo] || 'Elemento'} ${editandoElemento ? 'actualizado' : 'creado'} correctamente`);
   };
 
-  const eliminarElemento = (elemento, tipo) => {
-    const nombres = {
-      director: `director "${elemento.nombre} ${elemento.apellidos}"`,
-      residencia: `residencia "${elemento.nombre}"`,
-      trabajador: `trabajador "${elemento.nombre} ${elemento.apellidos}"`,
-      residente: `residente "${elemento.nombre} ${elemento.apellidos}"`
-    };
+const eliminarElemento = async (elemento: any, tipo: string) => {
+  const nombres: Record<string, string> = {
+    director: `director "${elemento.nombre} ${elemento.apellidos}"`,
+    residencia: `residencia "${elemento.nombre}"`,
+    trabajador: `trabajador "${elemento.nombre} ${elemento.apellidos}"`,
+    residente: `residente "${elemento.nombre} ${elemento.apellidos}"`,
+    empresa: `empresa "${elemento.nombre}"`
+  };
+  
+  if (!confirm(`¿Estás seguro de eliminar el ${nombres[tipo]}?`)) return;
+  
+  try {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
     
-    if (!confirm(`¿Estás seguro de eliminar el ${nombres[tipo]}?`)) return;
+    console.log('Intentando eliminar:', {
+      tipo,
+      entidad_id: elemento.id,
+      usuario: sesion.usuarioId
+    });
     
-    const motivo = prompt(`¿Por qué motivo se elimina este ${tipo}?`, '');
-    if (!motivo) return;
+const { data, error } = await supabase.rpc('mover_a_papelera', {
+  p_tipo_entidad: tipo,
+  p_entidad_id: elemento.id,  // ← SIN .toString()
+  p_eliminado_por: sesion.usuarioId,  // ← SIN .toString()
+  p_eliminado_por_rol: sesion.rol || 'superadmin'
+});    
+    console.log('Respuesta RPC:', { data, error });
     
-    if (!confirm(`ATENCIÓN: Se eliminará por: "${motivo}". ¿Confirmas?`)) return;
-    
-    SistemaPapelera.eliminar(tipo, elemento, motivo);
-    cargarTodosDatos();
-    
-    // Actualizar resultados de búsqueda si están activos
-    if (mostrandoResultados && busqueda) {
-      setTimeout(() => {
-        const nuevosResultados = buscarGlobal(busqueda);
-        setResultadosBusqueda(nuevosResultados);
-      }, 100);
+if (error) {
+      console.error('Error de Supabase COMPLETO:', JSON.stringify(error, null, 2));
+      throw error;
     }
     
-    alert(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} eliminado y enviado a papelera`);
-  };
+    if (data?.success) {
+      alert(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} eliminado y enviado a papelera`);
+      cargarTodosDatos();
+      
+      if (mostrandoResultados && busqueda) {
+        setTimeout(() => {
+          const nuevosResultados = buscarGlobal(busqueda);
+          setResultadosBusqueda(nuevosResultados);
+        }, 100);
+      }
+    } else {
+      alert('Error al eliminar elemento');
+    }
+  } catch (error) {
+    console.error('Error eliminando:', error);
+    alert('Error al eliminar elemento');
+  }
+};
 
   const restaurarElemento = (elementoId) => {
     if (SistemaPapelera.restaurar(elementoId)) {
