@@ -444,9 +444,13 @@ personal.forEach((trabajador: any) => {
 
 const guardarFormulario = async () => {
 // Si está editando director o trabajador, usar función RPC de actualización
-    if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && editandoElemento) {
+if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && editandoElemento) {
       try {
+        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+        
         const { data, error } = await supabase.rpc('actualizar_usuario', {
+          p_usuario_id: sesion.usuarioId,
+          p_rol_ejecutor: sesion.rol || 'superadmin',
           p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_apellidos: datosFormulario.apellidos,
@@ -467,7 +471,7 @@ const guardarFormulario = async () => {
         if (error) throw error;
         
         if (data && !data.success) {
-          alert(`❌ ${data.error}`);
+          alert(`${data.error}`);
           return;
         }
 
@@ -532,9 +536,14 @@ const guardarFormulario = async () => {
     }
 
 // Si es residencia nueva (no edición), usar RPC
-    if (formularioActivo === 'residencia' && !editandoElemento) {
+if (formularioActivo === 'residencia' && editandoElemento) {
       try {
-        const { data, error } = await supabase.rpc('crear_residencia', {
+        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+        
+        const { data, error } = await supabase.rpc('actualizar_residencia', {
+          p_usuario_id: sesion.usuarioId,
+          p_rol_ejecutor: sesion.rol || 'superadmin',
+          p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_direccion: datosFormulario.direccion,
           p_codigo_postal: datosFormulario.codigo_postal,
@@ -547,18 +556,17 @@ const guardarFormulario = async () => {
           p_cif: datosFormulario.cif,
           p_numero_licencia: datosFormulario.numero_licencia,
           p_director_id: datosFormulario.director_id,
-          p_empresa_id: null,
-          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null,
+          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
         });
 
         if (error) throw error;
         
         if (data && !data.success) {
-          alert(`❌ ${data.error}`);
+          alert(`${data.error}`);
           return;
         }
 
-        alert('✅ Residencia creada correctamente');
+        alert('✅ Residencia actualizada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -567,10 +575,11 @@ const guardarFormulario = async () => {
         return;
       } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error al crear residencia');
+        alert('❌ Error al actualizar residencia');
         return;
       }
     }
+
 // Si está editando residencia, usar RPC de actualización
     if (formularioActivo === 'residencia' && editandoElemento) {
       try {
@@ -613,9 +622,14 @@ const guardarFormulario = async () => {
     }
 
 // Si es empresa nueva, usar RPC
-    if (formularioActivo === 'empresa' && !editandoElemento) {
+if (formularioActivo === 'empresa' && editandoElemento) {
       try {
-        const { data, error } = await supabase.rpc('crear_empresa', {
+        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+        
+        const { data, error } = await supabase.rpc('actualizar_empresa', {
+          p_usuario_id: sesion.usuarioId,
+          p_rol_ejecutor: sesion.rol || 'superadmin',
+          p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_cif: datosFormulario.cif,
           p_email_facturacion: datosFormulario.email_facturacion,
@@ -636,11 +650,11 @@ const guardarFormulario = async () => {
         if (error) throw error;
         
         if (data && !data.success) {
-          alert(`❌ ${data.error}`);
+          alert(`${data.error}`);
           return;
         }
 
-        alert('✅ Empresa creada correctamente');
+        alert('✅ Empresa actualizada correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -649,7 +663,7 @@ const guardarFormulario = async () => {
         return;
       } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error al crear empresa');
+        alert('❌ Error al actualizar empresa');
         return;
       }
     }
@@ -698,9 +712,14 @@ const guardarFormulario = async () => {
     }
 
 // Si es residente nuevo, usar RPC
-    if (formularioActivo === 'residente' && !editandoElemento) {
+if (formularioActivo === 'residente' && editandoElemento) {
       try {
-        const { data, error } = await supabase.rpc('crear_residente', {
+        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+        
+        const { data, error } = await supabase.rpc('actualizar_residente', {
+          p_usuario_id: sesion.usuarioId,
+          p_rol_ejecutor: sesion.rol || 'superadmin',
+          p_id: editandoElemento.id,
           p_nombre: datosFormulario.nombre,
           p_apellidos: datosFormulario.apellidos,
           p_dni: datosFormulario.dni,
@@ -721,11 +740,11 @@ const guardarFormulario = async () => {
         if (error) throw error;
         
         if (data && !data.success) {
-          alert(`❌ ${data.error}`);
+          alert(`${data.error}`);
           return;
         }
 
-        alert('✅ Residente creado correctamente');
+        alert('✅ Residente actualizado correctamente');
         setFormularioActivo(false);
         setPasoActual(0);
         setDatosFormulario({});
@@ -734,10 +753,10 @@ const guardarFormulario = async () => {
         return;
       } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error al crear residente');
+        alert('❌ Error al actualizar residente');
         return;
       }
-    };
+    }
 
     // Si está editando residente, usar RPC de actualización
     if (formularioActivo === 'residente' && editandoElemento) {
