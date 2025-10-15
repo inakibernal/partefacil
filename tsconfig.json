@@ -37,8 +37,8 @@
   ],
   "exclude": [
     "node_modules",
+    "supabase/**",
     "_archive",
-    "_archive/**",
     ".next",
     "dist",
     "out"
