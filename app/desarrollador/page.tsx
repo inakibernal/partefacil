@@ -39,9 +39,20 @@ const PanelDesarrollador = () => {
 
 useEffect(() => {
     setIsClient(true);
-    inicializarSistema();
-    cargarTodosDatos();
+    verificarSesion();
   }, []);
+
+const verificarSesion = () => {
+  const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+  
+  if (sesion.rol !== 'superadmin' || !sesion.usuarioId) {
+    window.location.href = '/login';
+    return;
+  }
+
+  inicializarSistema();
+  cargarTodosDatos();
+};
 
 const cargarTodosDatos = async () => {
   if (typeof window !== 'undefined') {
@@ -535,91 +546,85 @@ if ((formularioActivo === 'director' || formularioActivo === 'trabajador') && ed
       }
     }
 
-// Si es residencia nueva (no edición), usar RPC
+// EDITAR residencia existente
 if (formularioActivo === 'residencia' && editandoElemento) {
-      try {
-        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
-        
-        const { data, error } = await supabase.rpc('actualizar_residencia', {
-          p_usuario_id: sesion.usuarioId,
-          p_rol_ejecutor: sesion.rol || 'superadmin',
-          p_id: editandoElemento.id,
-          p_nombre: datosFormulario.nombre,
-          p_direccion: datosFormulario.direccion,
-          p_codigo_postal: datosFormulario.codigo_postal,
-          p_poblacion: datosFormulario.poblacion,
-          p_telefono_fijo: datosFormulario.telefono_fijo,
-          p_telefono_movil: datosFormulario.telefono_movil || null,
-          p_email: datosFormulario.email,
-          p_total_plazas: parseInt(datosFormulario.total_plazas),
-          p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
-          p_cif: datosFormulario.cif,
-          p_numero_licencia: datosFormulario.numero_licencia,
-          p_director_id: datosFormulario.director_id,
-          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
-        });
+  try {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+    
+    const { data, error } = await supabase.rpc('actualizar_residencia', {
+      p_usuario_id: sesion.usuarioId,
+      p_rol_ejecutor: sesion.rol || 'superadmin',
+      p_id: editandoElemento.id,
+      p_nombre: datosFormulario.nombre,
+      p_direccion: datosFormulario.direccion,
+      p_codigo_postal: datosFormulario.codigo_postal,
+      p_poblacion: datosFormulario.poblacion,
+      p_telefono_fijo: datosFormulario.telefono_fijo,
+      p_telefono_movil: datosFormulario.telefono_movil || null,
+      p_email: datosFormulario.email,
+      p_total_plazas: parseInt(datosFormulario.total_plazas),
+      p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
+      p_cif: datosFormulario.cif,
+      p_numero_licencia: datosFormulario.numero_licencia,
+      p_director_id: datosFormulario.director_id,
+      p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
+    });
 
-        if (error) throw error;
-        
-        if (data && !data.success) {
-          alert(`${data.error}`);
-          return;
-        }
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
 
-        alert('✅ Residencia actualizada correctamente');
-        setFormularioActivo(false);
-        setPasoActual(0);
-        setDatosFormulario({});
-        setEditandoElemento(null);
-        cargarTodosDatos();
-        return;
-      } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error al actualizar residencia');
-        return;
-      }
-    }
+    alert('✅ Residencia actualizada correctamente');
+    setFormularioActivo(false);
+    setPasoActual(0);
+    setDatosFormulario({});
+    setEditandoElemento(null);
+    cargarTodosDatos();
+    return;
+  } catch (error: any) {
+    console.error('Error:', error);
+    alert('❌ Error al actualizar: ' + error.message);
+    return;
+  }
+}
 
-// Si está editando residencia, usar RPC de actualización
-    if (formularioActivo === 'residencia' && editandoElemento) {
-      try {
-        const { data, error } = await supabase.rpc('actualizar_residencia', {
-          p_id: editandoElemento.id,
-          p_nombre: datosFormulario.nombre,
-          p_direccion: datosFormulario.direccion,
-          p_codigo_postal: datosFormulario.codigo_postal,
-          p_poblacion: datosFormulario.poblacion,
-          p_telefono_fijo: datosFormulario.telefono_fijo,
-          p_telefono_movil: datosFormulario.telefono_movil || null,
-          p_email: datosFormulario.email,
-          p_total_plazas: parseInt(datosFormulario.total_plazas),
-          p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
-          p_cif: datosFormulario.cif,
-          p_numero_licencia: datosFormulario.numero_licencia,
-          p_director_id: datosFormulario.director_id,
-          p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
-        });
+// CREAR residencia nueva
+if (formularioActivo === 'residencia' && !editandoElemento) {
+  try {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+    
+    const { data, error } = await supabase.rpc('crear_residencia', {
+      p_nombre: datosFormulario.nombre,
+      p_direccion: datosFormulario.direccion,
+      p_codigo_postal: datosFormulario.codigo_postal,
+      p_poblacion: datosFormulario.poblacion,
+      p_telefono_fijo: datosFormulario.telefono_fijo,
+      p_telefono_movil: datosFormulario.telefono_movil || null,
+      p_email: datosFormulario.email,
+      p_total_plazas: parseInt(datosFormulario.total_plazas),
+      p_plazas_ocupadas: parseInt(datosFormulario.plazas_ocupadas),
+      p_cif: datosFormulario.cif,
+      p_numero_licencia: datosFormulario.numero_licencia,
+      p_director_id: datosFormulario.director_id,
+      p_empresa_id: null,
+      p_empresa_facturacion_id: datosFormulario.empresa_facturacion_id || null
+    });
 
-        if (error) throw error;
-        
-        if (data && !data.success) {
-          alert(`❌ ${data.error}`);
-          return;
-        }
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
 
-        alert('✅ Residencia actualizada correctamente');
-        setFormularioActivo(false);
-        setPasoActual(0);
-        setDatosFormulario({});
-        setEditandoElemento(null);
-        cargarTodosDatos();
-        return;
-      } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error al actualizar residencia');
-        return;
-      }
-    }
+    alert('✅ Residencia creada correctamente');
+    setFormularioActivo(false);
+    setPasoActual(0);
+    setDatosFormulario({});
+    setEditandoElemento(null);
+    cargarTodosDatos();
+    return;
+  } catch (error: any) {
+    console.error('Error:', error);
+    alert('❌ Error al crear: ' + error.message);
+    return;
+  }
+}
 
 // Si es empresa nueva, usar RPC
 if (formularioActivo === 'empresa' && editandoElemento) {
@@ -711,96 +716,87 @@ if (formularioActivo === 'empresa' && editandoElemento) {
       }
     }
 
-// Si es residente nuevo, usar RPC
+// EDITAR residente existente
 if (formularioActivo === 'residente' && editandoElemento) {
-      try {
-        const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
-        
-        const { data, error } = await supabase.rpc('actualizar_residente', {
-          p_usuario_id: sesion.usuarioId,
-          p_rol_ejecutor: sesion.rol || 'superadmin',
-          p_id: editandoElemento.id,
-          p_nombre: datosFormulario.nombre,
-          p_apellidos: datosFormulario.apellidos,
-          p_dni: datosFormulario.dni,
-          p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
-          p_telefono: datosFormulario.telefono || null,
-          p_direccion: datosFormulario.direccion,
-          p_codigo_postal: datosFormulario.codigo_postal,
-          p_ciudad: datosFormulario.ciudad,
-          p_grado_dependencia: datosFormulario.grado_dependencia,
-          p_residencia_id: datosFormulario.residencia_id,
-          p_fecha_ingreso: datosFormulario.fecha_ingreso,
-          p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
-          p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
-          p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
-          p_observaciones_medicas: datosFormulario.observaciones_medicas || null
-        });
+  try {
+    const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+    
+    const { data, error } = await supabase.rpc('actualizar_residente', {
+      p_usuario_id: sesion.usuarioId,
+      p_rol_ejecutor: sesion.rol || 'superadmin',
+      p_id: editandoElemento.id,
+      p_nombre: datosFormulario.nombre,
+      p_apellidos: datosFormulario.apellidos,
+      p_dni: datosFormulario.dni,
+      p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
+      p_telefono: datosFormulario.telefono || null,
+      p_direccion: datosFormulario.direccion,
+      p_codigo_postal: datosFormulario.codigo_postal,
+      p_ciudad: datosFormulario.ciudad,
+      p_grado_dependencia: datosFormulario.grado_dependencia,
+      p_residencia_id: datosFormulario.residencia_id,
+      p_fecha_ingreso: datosFormulario.fecha_ingreso,
+      p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
+      p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
+      p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
+      p_observaciones_medicas: datosFormulario.observaciones_medicas || null
+    });
 
-        if (error) throw error;
-        
-        if (data && !data.success) {
-          alert(`${data.error}`);
-          return;
-        }
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
 
-        alert('✅ Residente actualizado correctamente');
-        setFormularioActivo(false);
-        setPasoActual(0);
-        setDatosFormulario({});
-        setEditandoElemento(null);
-        cargarTodosDatos();
-        return;
-      } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error al actualizar residente');
-        return;
-      }
-    }
+    alert('✅ Residente actualizado correctamente');
+    setFormularioActivo(false);
+    setPasoActual(0);
+    setDatosFormulario({});
+    setEditandoElemento(null);
+    cargarTodosDatos();
+    return;
+  } catch (error: any) {
+    console.error('Error:', error);
+    alert('❌ Error al actualizar: ' + error.message);
+    return;
+  }
+}
 
-    // Si está editando residente, usar RPC de actualización
-    if (formularioActivo === 'residente' && editandoElemento) {
-      try {
-        const { data, error } = await supabase.rpc('actualizar_residente', {
-          p_id: editandoElemento.id,
-          p_nombre: datosFormulario.nombre,
-          p_apellidos: datosFormulario.apellidos,
-          p_dni: datosFormulario.dni,
-          p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
-          p_telefono: datosFormulario.telefono || null,
-          p_direccion: datosFormulario.direccion,
-          p_codigo_postal: datosFormulario.codigo_postal,
-          p_ciudad: datosFormulario.ciudad,
-          p_grado_dependencia: datosFormulario.grado_dependencia,
-          p_residencia_id: datosFormulario.residencia_id,
-          p_fecha_ingreso: datosFormulario.fecha_ingreso,
-          p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
-          p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
-          p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
-          p_observaciones_medicas: datosFormulario.observaciones_medicas || null
-        });
+// CREAR residente nuevo
+if (formularioActivo === 'residente' && !editandoElemento) {
+  try {
+    const { data, error } = await supabase.rpc('crear_residente', {
+      p_nombre: datosFormulario.nombre,
+      p_apellidos: datosFormulario.apellidos,
+      p_dni: datosFormulario.dni,
+      p_fecha_nacimiento: datosFormulario.fecha_nacimiento,
+      p_telefono: datosFormulario.telefono || null,
+      p_direccion: datosFormulario.direccion,
+      p_codigo_postal: datosFormulario.codigo_postal,
+      p_ciudad: datosFormulario.ciudad,
+      p_grado_dependencia: datosFormulario.grado_dependencia,
+      p_residencia_id: datosFormulario.residencia_id,
+      p_fecha_ingreso: datosFormulario.fecha_ingreso,
+      p_contacto_emergencia_nombre: datosFormulario.contacto_emergencia_nombre,
+      p_contacto_emergencia_telefono: datosFormulario.contacto_emergencia_telefono,
+      p_contacto_emergencia_parentesco: datosFormulario.contacto_emergencia_parentesco,
+      p_observaciones_medicas: datosFormulario.observaciones_medicas || null
+    });
 
-        if (error) throw error;
-        
-        if (data && !data.success) {
-          alert(`❌ ${data.error}`);
-          return;
-        }
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
 
-        alert('✅ Residente actualizado correctamente');
-        setFormularioActivo(false);
-        setPasoActual(0);
-        setDatosFormulario({});
-        setEditandoElemento(null);
-        cargarTodosDatos();
-        return;
-      } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error al actualizar residente');
-        return;
-      }
-    }
-  };
+    alert('✅ Residente creado correctamente');
+    setFormularioActivo(false);
+    setPasoActual(0);
+    setDatosFormulario({});
+    setEditandoElemento(null);
+    cargarTodosDatos();
+    return;
+  } catch (error: any) {
+    console.error('Error:', error);
+    alert('❌ Error al crear: ' + error.message);
+    return;
+  }
+}
+};
 
 const eliminarElemento = async (elemento: any, tipo: string) => {
   const nombres: Record<string, string> = {
@@ -1628,13 +1624,14 @@ if (error) {
 
           {vistaActual === 'trabajadores' && (
             <TrabajadoresView
-              personal={personal}
-              residencias={residencias}
-              directores={directores}
-              onRecargarDatos={cargarTodosDatos}
-              onMostrarFicha={(t) => mostrarFicha(t, 'trabajador')}
-              onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
-              onEliminar={(t) => eliminarElemento(t, 'trabajador')}
+	    key={personal.length}
+	    personal={personal}
+	    residencias={residencias}
+	    directores={directores}
+	    onRecargarDatos={cargarTodosDatos}
+	    onMostrarFicha={(t) => mostrarFicha(t, 'trabajador')}
+	    onIniciarFormulario={(tipo, elemento) => iniciarFormulario(tipo, elemento)}
+	    onEliminar={(t) => eliminarElemento(t, 'trabajador')}
             />
           )}
 
