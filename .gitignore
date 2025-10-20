@@ -37,3 +37,6 @@ temp_check.txt
 
 .env.local
 .vercel
+
+# Local Netlify folder
+.netlify

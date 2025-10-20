@@ -210,13 +210,7 @@ if (esDNI) {
           }}
         >
           <strong>💡 Puedes iniciar sesión con:</strong>
-          <br />• Tu <strong>DNI</strong>: 12345678A
-          <br />• Tu <strong>Email</strong>: usuario@email.com
-          <br />
-          <br />
-          <strong>Usuarios de prueba:</strong>
-          <br />• Superadmin: <em>i.benal.a87@gmail.com</em> / <em>SuperAdmin.2025</em>
-          <br />• Trabajador: <em>trabajador1@ejemplo.com</em> / <em>Trabajador1.2025</em>
+          <br />• Tu <strong>DNI</strong> o tu <strong>Email</strong>
         </div>
       </div>
     </div>
