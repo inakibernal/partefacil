@@ -622,7 +622,7 @@ const renderFiltros = () => (
                 Residentes sin incidencias ({residentesSinIncidencias.length})
               </h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "10px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "10px" }}>
                 {residentesSinIncidencias.map((residente) => {
                   const expandido = residentesExpandidos.has(residente.id);
 
@@ -658,7 +658,7 @@ const renderFiltros = () => (
 
                       {expandido && (
                         <div style={{ padding: "20px" }}>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
                             {Object.entries(camposEstatales as any).map(([campoKey, config]: any) => (
                               <div key={campoKey}>
                                 <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", marginBottom: "5px" }}>{config.label}</label>
@@ -705,7 +705,7 @@ const renderFiltros = () => (
             {partesFiltrados.map((parte: any) => (
               <div
                 key={parte.id}
-                style={{ ...estilos.card, display: "flex", flexDirection: "column", gap: "15px" }}
+                style={{ ...estilos.card, display: "flex", justifyContent: "space-between", alignItems: "center" }}
               >
                 <div>
                   <h4 style={{ margin: "0 0 5px 0", fontSize: "16px" }}>
@@ -719,10 +719,10 @@ const renderFiltros = () => (
                   </p>
                 </div>
 
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "10px" }}>
                   <button
                     onClick={() => setParteSeleccionado(parte)}
-                    style={{ ...estilos.button, backgroundColor: "#17a2b8", color: "white", fontSize: "14px", padding: "8px 12px", flex: "1 1 auto", minWidth: "80px" }}
+                    style={{ ...estilos.button, backgroundColor: "#17a2b8", color: "white", fontSize: "14px", padding: "8px 12px" }}
                   >
                     Ver
                   </button>
@@ -807,7 +807,7 @@ const renderFiltros = () => (
         }}
       >
         <div style={{ backgroundColor: "white", borderRadius: "10px", padding: "30px", maxWidth: "90%", maxHeight: "90%", overflow: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <h2 style={{ margin: 0 }}>Parte del {new Date(parteSeleccionado.fecha).toLocaleDateString("es-ES")}</h2>
             <button onClick={() => setParteSeleccionado(null)} style={{ ...estilos.buttonRed, fontSize: "18px", padding: "8px 12px" }}>
               ×

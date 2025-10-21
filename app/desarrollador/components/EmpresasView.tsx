@@ -18,7 +18,7 @@ export default function EmpresasView({
 }: EmpresasViewProps) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Empresas</h2>
         <button 
           onClick={() => onIniciarFormulario('empresa')}
@@ -36,29 +36,32 @@ export default function EmpresasView({
         ) : (
           empresas.map((empresa, index) => (
             <div key={empresa.id} style={{ padding: '20px', borderBottom: index < empresas.length - 1 ? '1px solid #e9ecef' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div>
                   <h3 style={{ fontSize: '18px', margin: '0 0 5px 0' }}>{empresa.nombre}</h3>
-                  <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
-                    {empresa.email_facturacion} • CIF: {empresa.cif} • {empresa.ciudad}
+                  <p style={{ fontSize: '14px', color: '#666', margin: '0', wordBreak: 'break-word' }}>
+                    {empresa.email_facturacion}
+                  </p>
+                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0' }}>
+                    CIF: {empresa.cif} • {empresa.ciudad}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button 
                     onClick={() => onMostrarFicha(empresa)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Ver
                   </button>
                   <button 
                     onClick={() => onIniciarFormulario('empresa', empresa)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Editar
                   </button>
                   <button 
                     onClick={() => onEliminar(empresa)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Eliminar
                   </button>

@@ -48,7 +48,7 @@ export default function ResidentesView({
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Residentes</h2>
         <button 
           onClick={() => onIniciarFormulario('residente')}
@@ -59,7 +59,7 @@ export default function ResidentesView({
       </div>
 
       {/* Estadísticas rápidas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '30px' }}>
         <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#6f42c1' }}>{residentes.length}</div>
           <div style={{ fontSize: '14px', color: '#666' }}>Total residentes</div>
@@ -92,14 +92,14 @@ export default function ResidentesView({
           {Object.entries(gruposResidencia).map(([residenciaId, grupo]: [string, any]) => (
             <div key={residenciaId} style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
               <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderBottom: '1px solid #dee2e6' }}>
-                <h3 style={{ fontSize: '18px', margin: '0', color: '#2c3e50' }}>
+                <h3 style={{ fontSize: '18px', margin: '0', color: '#2c3e50', wordBreak: 'break-word' }}>
                   🏠 {grupo.residencia ? grupo.residencia.nombre : 'Sin residencia asignada'}
                   <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
                     ({grupo.residentes.length} residente{grupo.residentes.length !== 1 ? 's' : ''})
                   </span>
                 </h3>
                 {grupo.residencia && (
-                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0' }}>
+                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0', wordBreak: 'break-word' }}>
                     📍 {grupo.residencia.direccion}, {grupo.residencia.poblacion}
                   </p>
                 )}
@@ -112,9 +112,9 @@ export default function ResidentesView({
                   
                   return (
                     <div key={residente.id} style={{ padding: '20px', borderBottom: esUltimo ? 'none' : '1px solid #f1f3f4' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ fontSize: '16px', margin: '0 0 8px 0', color: '#2c3e50' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                          <h4 style={{ fontSize: '16px', margin: '0 0 8px 0', color: '#2c3e50', wordBreak: 'break-word' }}>
                             {residente.nombre} {residente.apellidos}
                             <span style={{ fontSize: '14px', color: '#666', marginLeft: '10px' }}>({edad} años)</span>
                             {residente.estado !== 'activo' && (
@@ -124,14 +124,16 @@ export default function ResidentesView({
                                 backgroundColor: '#f8d7da',
                                 padding: '2px 8px',
                                 borderRadius: '12px',
-                                marginLeft: '10px'
+                                marginLeft: '10px',
+                                display: 'inline-block',
+                                marginTop: '5px'
                               }}>
                                 {residente.estado}
                               </span>
                             )}
                           </h4>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '14px', color: '#666' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#666' }}>
                             <div><strong>DNI:</strong> {residente.dni}</div>
                             <div><strong>Teléfono:</strong> {residente.telefono || 'No disponible'}</div>
                             <div><strong>Grado dependencia:</strong> {residente.grado_dependencia}</div>
@@ -139,17 +141,19 @@ export default function ResidentesView({
                           </div>
 
                           {residente.contacto_emergencia_nombre && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px', wordBreak: 'break-word' }}>
                               <strong>Contacto emergencia:</strong> {residente.contacto_emergencia_nombre} - {residente.contacto_emergencia_telefono}
                             </div>
                           )}
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '8px', marginLeft: '20px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button 
                             onClick={() => onMostrarFicha(residente)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#17a2b8', 
                               color: 'white', 
@@ -164,7 +168,9 @@ export default function ResidentesView({
                           <button 
                             onClick={() => onIniciarFormulario('residente', residente)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#007bff', 
                               color: 'white', 
@@ -179,7 +185,9 @@ export default function ResidentesView({
                           <button 
                             onClick={() => onEliminar(residente)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#dc3545', 
                               color: 'white', 

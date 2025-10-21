@@ -20,10 +20,11 @@ export default function PartesView({ directorId, residencias, trabajadores }: Pa
     trabajador_id: '',
     solo_incidencias: false
   });
-const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
+  const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
+
   useEffect(() => {
     cargarPartes();
-}, [filtros]);
+  }, [filtros]);
 
   const cargarPartes = async () => {
     setLoading(true);
@@ -62,7 +63,7 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '10px' }}>
         <h2 style={{ fontSize: '28px', color: '#2c3e50', margin: 0 }}>📋 Partes Diarios</h2>
       </div>
 
@@ -70,7 +71,7 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
       <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '25px' }}>
         <h3 style={{ fontSize: '18px', color: '#2c3e50', marginBottom: '20px' }}>🔍 Filtros</h3>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>Desde:</label>
             <input
@@ -135,13 +136,13 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={aplicarFiltros}
-            style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
+            style={{ flex: '1 1 auto', minWidth: '120px', padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
           >
             Aplicar Filtros
           </button>
           <button
             onClick={limpiarFiltros}
-            style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
+            style={{ flex: '1 1 auto', minWidth: '120px', padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}
           >
             Limpiar
           </button>
@@ -149,6 +150,8 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
             onClick={() => generarPDFConsolidado(partes, filtros)}
             disabled={partes.length === 0}
             style={{ 
+              flex: '1 1 auto',
+              minWidth: '120px',
               padding: '10px 20px', 
               backgroundColor: partes.length > 0 ? '#dc3545' : '#ccc', 
               color: 'white', 
@@ -164,6 +167,8 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
             onClick={() => exportarAExcel(partes, filtros)}
             disabled={partes.length === 0}
             style={{ 
+              flex: '1 1 auto',
+              minWidth: '120px',
               padding: '10px 20px', 
               backgroundColor: partes.length > 0 ? '#28a745' : '#ccc', 
               color: 'white', 
@@ -200,9 +205,9 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
               boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
               borderLeft: `4px solid ${parte.residentes_con_incidencias > 0 ? '#dc3545' : '#28a745'}`
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '18px', color: '#2c3e50', margin: '0 0 10px 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', color: '#2c3e50', margin: '0 0 10px 0', wordBreak: 'break-word' }}>
                     Parte del {new Date(parte.fecha).toLocaleDateString('es-ES')} - {parte.hora || 'Sin hora'}
                   </h3>
                   <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.8' }}>
@@ -214,10 +219,11 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
                     </div>
                   </div>
                 </div>
-<div style={{ display: 'flex', gap: '8px' }}>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setParteSeleccionado(parte)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '100px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Ver Detalles
                   </button>
@@ -270,11 +276,11 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
                         alert('Error al generar el PDF');
                       }
                     }}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '100px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     PDF
                   </button>
-		<button
+                  <button
                     onClick={async (e) => {
                       e.currentTarget.disabled = true;
                       e.currentTarget.textContent = '⏳ Eliminando...';
@@ -309,12 +315,11 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
                         e.currentTarget.textContent = '🗑️ Eliminar';
                       }
                     }}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '100px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     🗑️ Eliminar
                   </button>
                 </div>
-
               </div>
             </div>
           ))}
@@ -324,7 +329,8 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
       <div style={{ marginTop: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
         Total de partes: <strong>{partes.length}</strong>
       </div>
-{/* Modal Ver Detalles */}
+
+      {/* Modal Ver Detalles */}
       {parteSeleccionado && (
         <div style={{
           position: 'fixed',
@@ -344,8 +350,8 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
             maxHeight: '90%',
             overflow: 'auto'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>Parte del {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+              <h2 style={{ margin: 0, wordBreak: 'break-word' }}>Parte del {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')}</h2>
               <button
                 onClick={() => setParteSeleccionado(null)}
                 style={{
@@ -363,8 +369,8 @@ const [parteSeleccionado, setParteSeleccionado] = useState<any | null>(null);
             </div>
 
             <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-              <p><strong>Residencia:</strong> {parteSeleccionado.residencia_nombre}</p>
-              <p><strong>Trabajador:</strong> {parteSeleccionado.trabajador_nombre}</p>
+              <p style={{ wordBreak: 'break-word' }}><strong>Residencia:</strong> {parteSeleccionado.residencia_nombre}</p>
+              <p style={{ wordBreak: 'break-word' }}><strong>Trabajador:</strong> {parteSeleccionado.trabajador_nombre}</p>
               <p><strong>Fecha y hora:</strong> {new Date(parteSeleccionado.fecha).toLocaleDateString('es-ES')} a las {parteSeleccionado.hora || 'Sin hora'}</p>
               <p><strong>Total residentes:</strong> {parteSeleccionado.total_residentes}</p>
               <p><strong>Con incidencias:</strong> {parteSeleccionado.residentes_con_incidencias}</p>

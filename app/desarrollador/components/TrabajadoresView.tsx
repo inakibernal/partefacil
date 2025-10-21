@@ -26,27 +26,22 @@ export default function TrabajadoresView({
     console.log('==========================================');
   }, [personal, residencias, directores]);
 
-  // Función para encontrar la residencia de un trabajador
   const obtenerResidenciaTrabajador = (trabajador: any) => {
-    // NUEVO: El trabajador tiene un array de IDs de residencias
     if (trabajador.residencias && Array.isArray(trabajador.residencias) && trabajador.residencias.length > 0) {
       const residencia = residencias.find(r => r.id === trabajador.residencias[0]);
       if (residencia) return residencia.nombre;
     }
 
-    // Opción 1: El trabajador tiene residencia_id directamente
     if (trabajador.residencia_id) {
       const residencia = residencias.find(r => r.id === trabajador.residencia_id);
       if (residencia) return residencia.nombre;
     }
 
-    // Opción 2: Buscar a través del director_id del trabajador
     if (trabajador.director_id) {
       const residencia = residencias.find(r => r.director_id === trabajador.director_id);
       if (residencia) return residencia.nombre;
     }
 
-    // Opción 3: Buscar en los directores si el trabajador está vinculado
     const director = directores.find(d => d.id === trabajador.director_id);
     if (director) {
       const residencia = residencias.find(r => r.director_id === director.id);
@@ -80,7 +75,7 @@ export default function TrabajadoresView({
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Trabajadores</h2>
         <button 
           onClick={() => onIniciarFormulario('trabajador')}
@@ -91,7 +86,7 @@ export default function TrabajadoresView({
       </div>
 
       {/* Estadísticas rápidas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '30px' }}>
         <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>{personal.length}</div>
           <div style={{ fontSize: '14px', color: '#666' }}>Total trabajadores</div>
@@ -124,14 +119,14 @@ export default function TrabajadoresView({
           {Object.entries(gruposResidencia).map(([nombreResidencia, grupo]: [string, any]) => (
             <div key={nombreResidencia} style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
               <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderBottom: '1px solid #dee2e6' }}>
-                <h3 style={{ fontSize: '18px', margin: '0', color: '#2c3e50' }}>
+                <h3 style={{ fontSize: '18px', margin: '0', color: '#2c3e50', wordBreak: 'break-word' }}>
                   🏢 {nombreResidencia}
                   <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
                     ({grupo.trabajadores.length} trabajador{grupo.trabajadores.length !== 1 ? 'es' : ''})
                   </span>
                 </h3>
                 {grupo.residencia && (
-                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0' }}>
+                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0', wordBreak: 'break-word' }}>
                     📍 {grupo.residencia.direccion}, {grupo.residencia.poblacion}
                   </p>
                 )}
@@ -144,9 +139,9 @@ export default function TrabajadoresView({
                   
                   return (
                     <div key={trabajador.id} style={{ padding: '20px', borderBottom: esUltimo ? 'none' : '1px solid #f1f3f4' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ fontSize: '16px', margin: '0 0 8px 0', color: '#2c3e50' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                          <h4 style={{ fontSize: '16px', margin: '0 0 8px 0', color: '#2c3e50', wordBreak: 'break-word' }}>
                             {trabajador.nombre} {trabajador.apellidos}
                             {trabajador.estado !== 'activo' && (
                               <span style={{ 
@@ -155,16 +150,18 @@ export default function TrabajadoresView({
                                 backgroundColor: '#f8d7da',
                                 padding: '2px 8px',
                                 borderRadius: '12px',
-                                marginLeft: '10px'
+                                marginLeft: '10px',
+                                display: 'inline-block',
+                                marginTop: '5px'
                               }}>
                                 {trabajador.estado}
                               </span>
                             )}
                           </h4>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '14px', color: '#666' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#666' }}>
                             <div><strong>DNI:</strong> {trabajador.dni}</div>
-                            <div><strong>Email:</strong> {trabajador.email}</div>
+                            <div style={{ wordBreak: 'break-word' }}><strong>Email:</strong> {trabajador.email}</div>
                             <div><strong>Teléfono:</strong> {trabajador.telefono}</div>
                             <div><strong>Titulación:</strong> {trabajador.titulacion}</div>
                             <div><strong>Residencia:</strong> {nombreResidenciaAsignada}</div>
@@ -172,11 +169,13 @@ export default function TrabajadoresView({
                           </div>
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '8px', marginLeft: '20px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button 
                             onClick={() => onMostrarFicha(trabajador)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#17a2b8', 
                               color: 'white', 
@@ -191,7 +190,9 @@ export default function TrabajadoresView({
                           <button 
                             onClick={() => onIniciarFormulario('trabajador', trabajador)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#007bff', 
                               color: 'white', 
@@ -206,7 +207,9 @@ export default function TrabajadoresView({
                           <button 
                             onClick={() => onEliminar(trabajador)}
                             style={{ 
-                              padding: '6px 12px', 
+                              flex: '1 1 auto',
+                              minWidth: '90px',
+                              padding: '10px 12px', 
                               fontSize: '13px', 
                               backgroundColor: '#dc3545', 
                               color: 'white', 

@@ -8,6 +8,7 @@ import FichaModal from "../desarrollador/components/FichaModal";
 import PartesView from "./components/PartesView";
 import PapeleraView from '../desarrollador/components/PapeleraView';
 import ImportExportView from './components/ImportExportView';
+import ResponsiveNav from "../components/ResponsiveNav";
 
 export default function PanelDirector() {
   const [loading, setLoading] = useState(true);
@@ -646,32 +647,20 @@ const eliminarElemento = async (elemento: any, tipo: string) => {
         </div>
       </div>
 
-      {/* Navigation */}
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex' }}>
-{[
-            { id: 'estadisticas', label: 'Estadísticas', icon: '📊' },
-            { id: 'partes', label: 'Partes Diarios', icon: '📋' },
-            { id: 'residencias', label: 'Mis Residencias', icon: '🏢' },
-            { id: 'trabajadores', label: 'Mi Personal', icon: '👥' },
-            { id: 'residentes', label: 'Mis Residentes', icon: '🧓' },
-            { id: 'papelera', label: 'Papelera', icon: '🗑️'},
-            { id: 'importexport', label: 'Import/Export', icon: '📊' }
-          ].map(item => (
-            <button 
-              key={item.id} 
-              onClick={() => setVistaActual(item.id)} 
-              style={{ 
-                padding: '15px 20px', border: 'none',
-                backgroundColor: vistaActual === item.id ? '#e9ecef' : 'transparent', cursor: 'pointer',
-                borderBottom: vistaActual === item.id ? '3px solid #007bff' : '3px solid transparent'
-              }}
-            >
-              {item.icon} {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+{/* Navigation */}
+<ResponsiveNav
+  items={[
+    { id: 'estadisticas', label: 'Estadísticas', icon: '📊' },
+    { id: 'partes', label: 'Partes Diarios', icon: '📋' },
+    { id: 'residencias', label: 'Mis Residencias', icon: '🏢' },
+    { id: 'trabajadores', label: 'Mi Personal', icon: '👥' },
+    { id: 'residentes', label: 'Mis Residentes', icon: '🧓' },
+    { id: 'papelera', label: 'Papelera', icon: '🗑️' },
+    { id: 'importexport', label: 'Import/Export', icon: '📊' }
+  ]}
+  vistaActual={vistaActual}
+  onCambiarVista={setVistaActual}
+/>
 
       {/* Content */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>

@@ -128,12 +128,12 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
 
   return (
     <div>
-	<div style={{ backgroundColor: '#d1ecf1', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bee5eb' }}>
-            <strong>ℹ️ Información:</strong> 
-            {rol === 'superadmin' && ' Puedes eliminar elementos manualmente cuando lo consideres necesario.'}
-            {rol === 'director' && ' Los elementos permanecen en la papelera durante 5 años (1825 días) antes de ser eliminados automáticamente.'}
-            {rol === 'trabajador' && ' Los elementos permanecen en la papelera durante 100 días antes de ser eliminados automáticamente.'}
-          </div>
+      <div style={{ backgroundColor: '#d1ecf1', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #bee5eb' }}>
+        <strong>ℹ️ Información:</strong> 
+        {rol === 'superadmin' && ' Puedes eliminar elementos manualmente cuando lo consideres necesario.'}
+        {rol === 'director' && ' Los elementos permanecen en la papelera durante 5 años (1825 días) antes de ser eliminados automáticamente.'}
+        {rol === 'trabajador' && ' Los elementos permanecen en la papelera durante 100 días antes de ser eliminados automáticamente.'}
+      </div>
 
       <div style={{ display: 'grid', gap: '15px' }}>
         {elementos.map((elemento) => (
@@ -147,9 +147,9 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
               borderLeft: `4px solid ${elemento.dias_restantes < 10 ? '#dc3545' : '#ffc107'}`
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '18px', color: '#2c3e50', margin: '0 0 10px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', color: '#2c3e50', margin: '0 0 10px 0', wordBreak: 'break-word' }}>
                   {getTipoIcon(elemento.tipo_entidad)} {getNombreEntidad(elemento)}
                 </h3>
                 <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.8' }}>
@@ -162,13 +162,14 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
                 </div>
               </div>
 
-<div style={{ display: 'flex', gap: '10px' }}>
-                {/* Botón Restaurar - solo si puede_restaurar es true */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {elemento.puede_restaurar && (
                   <button
                     onClick={() => restaurar(elemento)}
                     style={{
-                      padding: '8px 16px',
+                      flex: '1 1 auto',
+                      minWidth: '120px',
+                      padding: '10px 16px',
                       backgroundColor: '#28a745',
                       color: 'white',
                       border: 'none',
@@ -181,12 +182,13 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
                   </button>
                 )}
                 
-                {/* Botón Eliminar Definitivo - solo superadmin */}
                 {rol === 'superadmin' && (
                   <button
                     onClick={() => eliminarDefinitivo(elemento)}
                     style={{
-                      padding: '8px 16px',
+                      flex: '1 1 auto',
+                      minWidth: '120px',
+                      padding: '10px 16px',
                       backgroundColor: '#dc3545',
                       color: 'white',
                       border: 'none',
@@ -199,9 +201,8 @@ export default function PapeleraView({ usuarioId, rol, onRecargar }: PapeleraVie
                   </button>
                 )}
                 
-                {/* Si no puede hacer nada, mostrar mensaje */}
                 {!elemento.puede_restaurar && rol !== 'superadmin' && (
-                  <span style={{ color: '#999', fontSize: '14px', fontStyle: 'italic' }}>
+                  <span style={{ color: '#999', fontSize: '14px', fontStyle: 'italic', padding: '10px 0' }}>
                     Solo visible
                   </span>
                 )}

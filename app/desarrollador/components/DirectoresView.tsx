@@ -16,7 +16,7 @@ export default function DirectoresView({
 }) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <h2 style={{ fontSize: '24px', margin: '0' }}>Gestión de Directores</h2>
         <button 
           onClick={() => onIniciarFormulario('director')}
@@ -34,29 +34,32 @@ export default function DirectoresView({
         ) : (
           directores.map((director, index) => (
             <div key={director.id} style={{ padding: '20px', borderBottom: index < directores.length - 1 ? '1px solid #e9ecef' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div>
                   <h3 style={{ fontSize: '18px', margin: '0 0 5px 0' }}>{director.nombre} {director.apellidos}</h3>
-                  <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
-                    {director.email} • DNI: {director.dni} • {director.experiencia} años experiencia
+                  <p style={{ fontSize: '14px', color: '#666', margin: '0', wordBreak: 'break-word' }}>
+                    {director.email}
+                  </p>
+                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0 0' }}>
+                    DNI: {director.dni} • {director.experiencia} años exp.
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button 
                     onClick={() => onMostrarFicha(director)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Ver
                   </button>
                   <button 
                     onClick={() => onIniciarFormulario('director', director)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Editar
                   </button>
                   <button 
                     onClick={() => onEliminar(director)}
-                    style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px 16px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Eliminar
                   </button>

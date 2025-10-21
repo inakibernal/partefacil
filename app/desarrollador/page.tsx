@@ -12,6 +12,7 @@ import ResidentesView from "./components/ResidentesView";
 import EmpresasView from "./components/EmpresasView";
 import PapeleraView from "./components/PapeleraView";
 import CrearUsuarioModal from "./components/CrearUsuarioModal";
+import ResponsiveNav from "../components/ResponsiveNav";
 
 const PanelDesarrollador = () => {
   const [vistaActual, setVistaActual] = useState('directores');
@@ -1561,33 +1562,22 @@ if (error) {
         </div>
       )}
 
-      {/* Navigation */}
+{/* Navigation */}
       {!mostrandoResultados && (
-        <div style={{ backgroundColor: 'white', borderBottom: '1px solid #dee2e6' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex' }}>
-            {[
-              { id: 'directores', label: 'Directores', icon: '👨‍'}, 
-	      { id: 'empresas', label: 'Empresas', icon: '🏢' },
-              { id: 'residencias', label: 'Residencias', icon: '🏢' },
-              { id: 'trabajadores', label: 'Trabajadores', icon: '👥' },
-              { id: 'residentes', label: 'Residentes', icon: '🧓' },
-              { id: 'papelera', label: 'Papelera', icon: '🗑️' }
-            ].map(item => (
-              <button 
-                key={item.id} 
-                onClick={() => setVistaActual(item.id)} 
-                style={{ 
-                  padding: '15px 20px', border: 'none',
-                  backgroundColor: vistaActual === item.id ? '#e9ecef' : 'transparent', cursor: 'pointer',
-                  borderBottom: vistaActual === item.id ? '3px solid #007bff' : '3px solid transparent'
-                }}
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ResponsiveNav
+          items={[
+            { id: 'directores', label: 'Directores', icon: '👨‍💼' },
+            { id: 'empresas', label: 'Empresas', icon: '🏢' },
+            { id: 'residencias', label: 'Residencias', icon: '🏢' },
+            { id: 'trabajadores', label: 'Trabajadores', icon: '👥' },
+            { id: 'residentes', label: 'Residentes', icon: '🧓' },
+            { id: 'papelera', label: 'Papelera', icon: '🗑️' }
+          ]}
+          vistaActual={vistaActual}
+          onCambiarVista={setVistaActual}
+        />
       )}
+
 
       {/* Content */}
       {!mostrandoResultados && (
