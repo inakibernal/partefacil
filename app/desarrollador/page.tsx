@@ -63,8 +63,8 @@ const cargarTodosDatos = async () => {
       const usuarios = usuariosData || [];
 
       // Separar por rol
-	const directoresData = usuarios.filter(u => u.rol === 'director' && u.estado === 'activo');
-	const personalData = usuarios.filter(u => u.rol === 'trabajador' && u.estado === 'activo');  
+	const directoresData = usuarios.filter(u => u.rol === 'director');
+	const personalData = usuarios.filter(u => u.rol === 'trabajador');
       // Cargar residencias desde Supabase
       const { data: residenciasData } = await supabase.rpc('obtener_residencias_admin');
   
