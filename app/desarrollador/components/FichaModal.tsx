@@ -82,21 +82,24 @@ function FichaDirector({ elemento, residencias }: { elemento: any; residencias: 
     }
 
     try {
-      const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
-      
-      const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          userId: sesion.usuarioId,
-          rolEjecutor: sesion.rol || 'superadmin',
-          targetUserId: elemento.id,
-          nuevaPassword: nuevaPassword
-        })
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+if (!session) {
+  alert('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+  return;
+}
+
+const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`,
+    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  },
+  body: JSON.stringify({
+    targetUserId: elemento.id,
+    nuevaPassword: nuevaPassword
+  }),
+});
 
       const data = await response.json();
       
@@ -243,7 +246,7 @@ function FichaTrabajador({ elemento }: { elemento: any }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+	   'Authorization': `Bearer ${sesion.accessToken || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
           userId: sesion.usuarioId,
