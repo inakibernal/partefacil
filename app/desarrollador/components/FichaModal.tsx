@@ -1,4 +1,6 @@
 "use client";
+import { createClient } from '@supabase/supabase-js'
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 import React, { useState } from "react";
 
 type TipoElemento = "director" | "residencia" | "trabajador" | "residente" | "empresa";
