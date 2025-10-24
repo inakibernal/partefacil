@@ -242,21 +242,31 @@ function FichaTrabajador({ elemento }: { elemento: any }) {
     }
 
     try {
-      const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
-      
-      const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-	   'Authorization': `Bearer ${sesion.accessToken || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          userId: sesion.usuarioId,
-          rolEjecutor: sesion.rol || 'superadmin',
-          targetUserId: elemento.id,
-          nuevaPassword: nuevaPassword
-        })
-      });
+      // 1) Saca el access token REAL del usuario logueado
+const { data: { session } } = await supabase.auth.getSession();
+const token = session?.access_token;
+if (!token) {
+  alert('❌ No hay sesión válida (token). Vuelve a iniciar sesión.');
+  return;
+}
+
+// 2) Saca también datos básicos de tu “sesion_activa” (solo para userId/rol)
+const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+
+// 3) Llama a la Edge Function con el Bearer <access_token>
+const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    userId: sesion.usuarioId,           // quién ejecuta (para logs)
+    rolEjecutor: sesion.rol,            // 'director'
+    targetUserId: elemento.id,          // a quién le reseteas
+    nuevaPassword: nuevaPassword
+  })
+});
 
       const data = await response.json();
       
