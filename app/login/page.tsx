@@ -70,7 +70,7 @@ if (esDNI) {
         return;
       }
 
-      // Guardar sesión mínima (compatibilidad con resto de páginas)
+// Guardar sesión mínima (compatibilidad con resto de páginas)
       localStorage.setItem(
         "sesion_activa",
         JSON.stringify({
@@ -80,6 +80,7 @@ if (esDNI) {
           dni: usuarioPerfil.dni,
           nombre: usuarioPerfil.nombre,
           apellidos: usuarioPerfil.apellidos,
+          accessToken: authData.session.access_token
         })
       );
 

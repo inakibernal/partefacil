@@ -1,7 +1,7 @@
 "use client";
+import React, { useState } from "react";
 import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-import React, { useState } from "react";
 
 type TipoElemento = "director" | "residencia" | "trabajador" | "residente" | "empresa";
 
@@ -85,32 +85,30 @@ function FichaDirector({ elemento, residencias }: { elemento: any; residencias: 
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-if (!session) {
-  alert('Tu sesión ha caducado. Vuelve a iniciar sesión.');
-  return;
-}
+      if (!session) {
+        alert('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+        return;
+      }
 
-const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`,
-    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  },
-  body: JSON.stringify({
-    targetUserId: elemento.id,
-    nuevaPassword: nuevaPassword
-  }),
-});
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: {
+          targetUserId: elemento.id,
+          nuevaPassword
+        }
+      });
 
-      const data = await response.json();
-      
-      if (data.success) {
+      if (error) {
+        console.error(error);
+        alert(`❌ Error: ${error.message || 'Invocación fallida'}`);
+        return;
+      }
+
+      if (data?.success) {
         alert(`✅ Contraseña actualizada correctamente para ${elemento.nombre} ${elemento.apellidos}`);
         setResetandoPassword(false);
         setNuevaPassword('');
       } else {
-        alert(`❌ Error: ${data.error}`);
+        alert(`❌ Error: ${data?.error || 'Desconocido'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -242,40 +240,31 @@ function FichaTrabajador({ elemento }: { elemento: any }) {
     }
 
     try {
-      // 1) Saca el access token REAL del usuario logueado
-const { data: { session } } = await supabase.auth.getSession();
-const token = session?.access_token;
-if (!token) {
-  alert('❌ No hay sesión válida (token). Vuelve a iniciar sesión.');
-  return;
-}
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('❌ No hay sesión válida (token). Vuelve a iniciar sesión.');
+        return;
+      }
 
-// 2) Saca también datos básicos de tu “sesion_activa” (solo para userId/rol)
-const sesion = JSON.parse(localStorage.getItem('sesion_activa') || '{}');
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: {
+          targetUserId: elemento.id,
+          nuevaPassword
+        }
+      });
 
-// 3) Llama a la Edge Function con el Bearer <access_token>
-const response = await fetch('https://pwryrzmniqjrhikspqoz.supabase.co/functions/v1/reset-password', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  },
-  body: JSON.stringify({
-    userId: sesion.usuarioId,           // quién ejecuta (para logs)
-    rolEjecutor: sesion.rol,            // 'director'
-    targetUserId: elemento.id,          // a quién le reseteas
-    nuevaPassword: nuevaPassword
-  })
-});
+      if (error) {
+        console.error(error);
+        alert(`❌ Error: ${error.message || 'Invocación fallida'}`);
+        return;
+      }
 
-      const data = await response.json();
-      
-      if (data.success) {
+      if (data?.success) {
         alert(`✅ Contraseña actualizada correctamente para ${elemento.nombre} ${elemento.apellidos}`);
         setResetandoPassword(false);
         setNuevaPassword('');
       } else {
-        alert(`❌ Error: ${data.error}`);
+        alert(`❌ Error: ${data?.error || 'Desconocido'}`);
       }
     } catch (error) {
       console.error('Error:', error);

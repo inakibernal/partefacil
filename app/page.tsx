@@ -1,13 +1,15 @@
 export default function HomePage() {
-      {/* Botón Iniciar Sesión - Flotante arriba derecha */}
-      <div className="absolute top-4 right-4 z-50">
-        <a
-          href="/login"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl"
-        >
-          Iniciar Sesión
-        </a>
-      </div>
+  {
+    /* Botón Iniciar Sesión - Flotante arriba derecha */
+  }
+  <div className="absolute top-4 right-4 z-50">
+    <a
+      href="/login"
+      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl"
+    >
+      Iniciar Sesión
+    </a>
+  </div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -17,55 +19,53 @@ export default function HomePage() {
           {/* Logo principal - Documento con check */}
           <div className="flex justify-center mb-6 md:mb-8">
             <div className="relative">
-              <svg 
-                width="120" 
-                height="120" 
-                viewBox="0 0 100 100" 
+              <svg
+                width="120"
+                height="120"
+                viewBox="0 0 100 100"
                 className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 drop-shadow-lg hover:scale-105 transition-transform duration-300"
               >
                 {/* Documento principal */}
-                <rect x="25" y="15" width="45" height="60" fill="#5DADE2" rx="3"/>
-                
+                <rect x="25" y="15" width="45" height="60" fill="#5DADE2" rx="3" />
+
                 {/* Esquina doblada */}
-                <path d="M60 15 L60 25 L70 25 Z" fill="#3498DB"/>
-                
+                <path d="M60 15 L60 25 L70 25 Z" fill="#3498DB" />
+
                 {/* Líneas de texto */}
-                <rect x="30" y="25" width="25" height="2" fill="white" rx="1"/>
-                <rect x="30" y="30" width="30" height="2" fill="white" rx="1"/>
-                <rect x="30" y="35" width="20" height="2" fill="white" rx="1"/>
-                <rect x="30" y="40" width="28" height="2" fill="white" rx="1"/>
-                
+                <rect x="30" y="25" width="25" height="2" fill="white" rx="1" />
+                <rect x="30" y="30" width="30" height="2" fill="white" rx="1" />
+                <rect x="30" y="35" width="20" height="2" fill="white" rx="1" />
+                <rect x="30" y="40" width="28" height="2" fill="white" rx="1" />
+
                 {/* Check verde */}
-                <circle cx="40" cy="55" r="8" fill="#27AE60"/>
-                <path d="M35 55 L38 58 L45 51" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="40" cy="55" r="8" fill="#27AE60" />
+                <path
+                  d="M35 55 L38 58 L45 51"
+                  stroke="white"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
           </div>
-
           {/* Título principal */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
             <span className="text-blue-600">Parte Fácil</span>
-            <br className="hidden sm:block"/>
+            <br className="hidden sm:block" />
             <span className="block mt-2 sm:mt-0 sm:inline"> para Residencias</span>
           </h1>
-
           {/* Subtítulo */}
           <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed px-4">
-            La forma más <span className="font-semibold text-blue-600">simple y rápida</span> de gestionar 
-            partes diarios en residencias de mayores. 
+            La forma más <span className="font-semibold text-blue-600">simple y rápida</span> de
+            gestionar partes diarios en residencias de mayores.
             <span className="block mt-2 text-base sm:text-lg md:text-xl">
               De papel a digital en <span className="font-semibold">1 clic</span>
             </span>
           </p>
-
           {/* Botones principales */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center pt-6 md:pt-8 px-4">
-            <a
-              href="/tarifa-unica"
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-            >
-              Tarifa Única
-            </a>
             <a
               href="/caracteristicas"
               className="w-full sm:w-auto border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 transform hover:-translate-y-1"
@@ -73,16 +73,16 @@ export default function HomePage() {
               Ver Características
             </a>
           </div>
-
           {/* Nuevo botón de Contacto debajo */}
           <div className="mt-6">
             <a
               href="/contacto"
-	      className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 md:px-12 rounded-xl text-lg md:text-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Contacto
             </a>
-          </div>        </div>
+          </div>{' '}
+        </div>
 
         {/* Características destacadas */}
         <div className="mt-16 md:mt-24">
@@ -106,7 +106,9 @@ export default function HomePage() {
 
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center">
               <div className="text-4xl md:text-5xl mb-4">📱</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">100% adaptado a todo tipo de dispositivos</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                100% adaptado a todo tipo de dispositivos
+              </h3>
               <p className="text-gray-600">
                 Funciona en <strong>móvil, tablet y ordenador</strong>. Acceso desde cualquier lugar
               </p>
@@ -127,8 +129,8 @@ export default function HomePage() {
           <div className="bg-blue-600 rounded-3xl p-8 md:p-12 text-white text-center">
             <div className="text-2xl md:text-3xl mb-6">"</div>
             <p className="text-lg md:text-xl mb-6 leading-relaxed max-w-3xl mx-auto">
-              Antes tardábamos 35 minutos en cada parte diario. Ahora, con Parte Fácil, 
-              son solo 2 minutos. Nuestro personal puede dedicar más tiempo a los residentes.
+              Antes tardábamos 35 minutos en cada parte diario. Ahora, con Parte Fácil, son solo 2
+              minutos. Nuestro personal puede dedicar más tiempo a los residentes.
             </p>
             <div className="font-semibold">María González</div>
             <div className="text-blue-200">Directora, Residencia San Miguel</div>
@@ -151,7 +153,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-xs md:text-sm text-gray-600 leading-relaxed">
             <p className="mb-4">
-              © 2025 | <span className="font-semibold">Parte Fácil®</span> es una marca registrada de software para gestión de Partes diarios de Residencias de Mayores
+              © 2025 | <span className="font-semibold">Parte Fácil®</span> es una marca registrada
+              de software para gestión de Partes diarios de Residencias de Mayores
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
               <a href="/politica-privacidad" className="hover:text-blue-600 transition-colors">
@@ -170,5 +173,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
