@@ -20,7 +20,7 @@
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.543.0",
-    "next": "15.5.2",
+    "next": "^16.1.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tailwind-merge": "^3.3.1",
